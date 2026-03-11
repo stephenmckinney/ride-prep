@@ -545,7 +545,7 @@
     <hr class="divider">
     <div class="section-label">Weather</div>
 
-    <button class="btn-weather" id="fetchWeatherBtn" onclick="fetchWeather()">Fetch Weather for Ride Day</button>
+    <button class="btn-weather" id="fetchWeatherBtn">Fetch Weather for Ride Day</button>
     <div class="weather-status" id="weatherStatus"></div>
 
     <div class="weather-preview" id="weatherPreview">
@@ -619,7 +619,7 @@
       </select>
     </div>
 
-    <button class="btn btn-primary" onclick="generateChecklist()">Generate Checklist</button>
+    <button class="btn btn-primary" id="generateBtn">Generate Checklist</button>
   </div>
 
   <!-- CHECKLIST SCREEN -->
@@ -628,64 +628,133 @@
     <div id="rideSummary"></div>
     <div class="checklist" id="checklistContainer"></div>
     <div class="footer-actions">
-      <button class="btn btn-secondary" onclick="resetAll()">New Ride</button>
+      <button class="btn btn-secondary" id="resetBtn">New Ride</button>
     </div>
   </div>
 
   <script>
-    // Set default date to tomorrow
+    // ── DOM References ──────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+
+    const els = {
+      headerTitle: $('headerTitle'),
+      headerSub: $('headerSub'),
+      progressBar: $('progressBar'),
+      progressFill: $('progressFill'),
+      progressText: $('progressText'),
+      setupScreen: $('setupScreen'),
+      checklistScreen: $('checklistScreen'),
+      checklistContainer: $('checklistContainer'),
+      weatherBanner: $('weatherBanner'),
+      rideSummary: $('rideSummary'),
+      fetchWeatherBtn: $('fetchWeatherBtn'),
+      weatherStatus: $('weatherStatus'),
+      weatherPreview: $('weatherPreview'),
+      generateBtn: $('generateBtn'),
+      resetBtn: $('resetBtn'),
+      rideDate: $('rideDate'),
+      rideTime: $('rideTime'),
+      rideMiles: $('rideMiles'),
+      rideLocation: $('rideLocation'),
+      rideBike: $('rideBike'),
+      rideTemp: $('rideTemp'),
+      rideWind: $('rideWind'),
+      rideAqi: $('rideAqi'),
+      rideSunset: $('rideSunset'),
+      rideMeetup: $('rideMeetup'),
+      rideLock: $('rideLock'),
+      wpTemp: $('wpTemp'),
+      wpWind: $('wpWind'),
+      wpAqi: $('wpAqi'),
+      wpHumidity: $('wpHumidity'),
+      wpSunset: $('wpSunset'),
+      wpPrecip: $('wpPrecip'),
+    };
+
+    // ── HTML Escaping ───────────────────────────────────────────────
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // ── Event Delegation ────────────────────────────────────────────
+    els.fetchWeatherBtn.addEventListener('click', fetchWeather);
+    els.generateBtn.addEventListener('click', generateChecklist);
+    els.resetBtn.addEventListener('click', resetAll);
+
+    document.addEventListener('click', (e) => {
+      const item = e.target.closest('.item');
+      if (item) { toggleItem(item); return; }
+
+      const header = e.target.closest('.section-header');
+      if (header) {
+        const section = header.closest('.section');
+        if (section) section.classList.toggle('collapsed');
+      }
+    });
+
+    // ── Set default date to tomorrow ────────────────────────────────
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById('rideDate').value = tomorrow.toISOString().split('T')[0];
+    els.rideDate.value = tomorrow.toISOString().split('T')[0];
 
-    // Restore saved session (if any) — runs after DOM is ready
-    window.addEventListener('DOMContentLoaded', () => {loadState();});
-    // Also try immediately in case DOMContentLoaded already fired
-    if (document.readyState !== 'loading') {loadState();}
+    // ── Restore saved session ───────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => { loadState(); });
+    if (document.readyState !== 'loading') { loadState(); }
+
+    // ── Constants ───────────────────────────────────────────────────
 
     const BIKES = {
-      caledonia: {name: 'Cervélo Caledonia-5', tire: '700C x 25', frontPsi: '55–60', rearPsi: '60–65'},
+      caledonia: {name: 'Cervélo Caledonia-5', tire: '700C x 25', frontPsi: '55\u201360', rearPsi: '60\u201365'},
       r3: {name: 'Cervélo R3', tire: '700C x 23', frontPsi: '70', rearPsi: '70'},
       cx: {name: 'Open UP 700C (CX)', tire: '700C x 34', frontPsi: '25', rearPsi: '25'},
       gravel: {name: 'Open UP 650B (Gravel)', tire: '650B', frontPsi: '24', rearPsi: '25'},
-      mtb: {name: 'Ripley MTB', tire: '29" x 2.4"', frontPsi: '22–24', rearPsi: '24–26'}
+      mtb: {name: 'Ripley MTB', tire: '29" x 2.4"', frontPsi: '22\u201324', rearPsi: '24\u201326'}
     };
+
+    const CLOTHING_RULES = [
+      { min: 71, max: Infinity, prepend: [{id: 'jersey', text: 'Jersey'}] },
+      { min: 65, max: 70, prepend: [{id: 'baselayer', text: 'Pro Team base layer', detail: 'Lightweight mesh'}, {id: 'jersey', text: 'Brevet jersey'}] },
+      { min: 60, max: 64, prepend: [{id: 'baselayer', text: 'Merino wool base layer'}, {id: 'jersey', text: 'Brevet jersey'}] },
+      { min: 55, max: 59, prepend: [{id: 'baselayer', text: 'Merino wool base layer'}, {id: 'jersey', text: 'Long-sleeve jersey'}] },
+      { min: 50, max: 54, prepend: [{id: 'baselayer', text: 'Merino wool base layer'}, {id: 'jersey', text: 'Long-sleeve jersey'}], append: [{id: 'windjacket', text: 'Classic Wind jacket'}] },
+      { min: 40, max: 49, prepend: [{id: 'baselayer', text: 'Merino wool base layer'}, {id: 'jersey', text: 'Long-sleeve jersey'}], append: [{id: 'softshell', text: 'Classic Softshell jacket'}, {id: 'woolhat', text: 'Wool hat (optional \u2014 helps with ears)'}] },
+      { min: 30, max: 39, prepend: [{id: 'baselayer', text: 'Merino wool base layer'}, {id: 'jersey', text: 'Long-sleeve jersey'}], append: [{id: 'softshell', text: 'Classic Softshell jacket'}, {id: 'woolhat', text: 'Wool hat (must)'}, {id: 'scarf', text: 'Cycling scarf'}] },
+    ];
 
     let checkState = {};
     let weatherData = null;
 
     // ── Persistence ─────────────────────────────────────────────────
 
-    const STORAGE_KEY = 'ridePrep_v1';
+    const STORAGE_KEY = 'ridePrep_v2';
+    const FORM_FIELDS = ['rideDate', 'rideTime', 'rideMiles', 'rideLocation', 'rideBike', 'rideTemp', 'rideWind', 'rideAqi', 'rideSunset', 'rideMeetup', 'rideLock'];
+
+    function getFormValues() {
+      const form = {};
+      FORM_FIELDS.forEach(id => { form[id] = els[id].value; });
+      return form;
+    }
+
+    function setFormValues(form) {
+      if (!form) return;
+      Object.entries(form).forEach(([id, val]) => {
+        if (els[id] && val) els[id].value = val;
+      });
+    }
 
     function saveState() {
       try {
         const state = {
-          screen: document.getElementById('checklistScreen').classList.contains('hidden') ? 'setup' : 'checklist',
+          screen: els.checklistScreen.classList.contains('hidden') ? 'setup' : 'checklist',
           checkState,
           weatherData,
-          checklistHTML: document.getElementById('checklistContainer').innerHTML,
-          weatherBannerHTML: document.getElementById('weatherBanner').innerHTML,
-          rideSummaryHTML: document.getElementById('rideSummary').innerHTML,
-          headerTitle: document.getElementById('headerTitle').textContent,
-          headerSub: document.getElementById('headerSub').textContent,
-          form: {
-            rideDate: document.getElementById('rideDate').value,
-            rideTime: document.getElementById('rideTime').value,
-            rideMiles: document.getElementById('rideMiles').value,
-            rideLocation: document.getElementById('rideLocation').value,
-            rideBike: document.getElementById('rideBike').value,
-            rideTemp: document.getElementById('rideTemp').value,
-            rideWind: document.getElementById('rideWind').value,
-            rideAqi: document.getElementById('rideAqi').value,
-            rideSunset: document.getElementById('rideSunset').value,
-            rideMeetup: document.getElementById('rideMeetup').value,
-            rideLock: document.getElementById('rideLock').value,
-          },
+          form: getFormValues(),
           savedAt: Date.now()
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) { /* storage full or unavailable — silently ignore */}
+      } catch (e) { /* storage full or unavailable */ }
     }
 
     function loadState() {
@@ -693,204 +762,150 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return false;
         const state = JSON.parse(raw);
+        if (!state || typeof state !== 'object') return false;
 
-        // Restore form values
-        if (state.form) {
-          Object.entries(state.form).forEach(([id, val]) => {
-            const el = document.getElementById(id);
-            if (el && val) el.value = val;
-          });
-        }
+        setFormValues(state.form);
 
-        // If we were on the checklist screen, restore it
-        if (state.screen === 'checklist' && state.checklistHTML) {
-          checkState = state.checkState || {};
+        if (state.screen === 'checklist') {
           weatherData = state.weatherData || null;
-
-          document.getElementById('checklistContainer').innerHTML = state.checklistHTML;
-          document.getElementById('weatherBanner').innerHTML = state.weatherBannerHTML || '';
-          document.getElementById('rideSummary').innerHTML = state.rideSummaryHTML || '';
-          document.getElementById('headerTitle').textContent = state.headerTitle || 'Ride Prep';
-          document.getElementById('headerSub').textContent = state.headerSub || '';
-
-          // Re-apply checked states to DOM
-          document.querySelectorAll('.item').forEach(item => {
-            const key = item.dataset.key;
-            if (checkState[key]) {
-              item.classList.add('checked');
-            }
-          });
-
-          // Show checklist screen
-          document.getElementById('setupScreen').classList.add('hidden');
-          document.getElementById('checklistScreen').classList.remove('hidden');
-          document.getElementById('progressBar').classList.remove('hidden');
-          document.getElementById('progressText').classList.remove('hidden');
-          updateProgress();
+          checkState = state.checkState || {};
+          generateChecklist(true);
           return true;
         }
         return false;
-      } catch (e) {return false;}
+      } catch (e) { return false; }
     }
 
     function clearState() {
-      try {localStorage.removeItem(STORAGE_KEY);} catch (e) { }
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) { }
     }
 
     // ── Weather Fetching ──────────────────────────────────────────────
 
+    async function geocodeLocation(name) {
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.results || data.results.length === 0) {
+        throw new Error(`Could not find "${name}". Try a more specific city name.`);
+      }
+      const {latitude, longitude, timezone, name: cityName, admin1} = data.results[0];
+      return {latitude, longitude, timezone, cityName, admin1};
+    }
+
+    async function fetchForecast(lat, lon, tz, date, hourIndex) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+        + `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation_probability`
+        + `&daily=sunset`
+        + `&temperature_unit=fahrenheit&wind_speed_unit=mph`
+        + `&timezone=${encodeURIComponent(tz)}`
+        + `&start_date=${date}&end_date=${date}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.hourly || !data.hourly.time || data.hourly.time.length === 0) {
+        throw new Error('No forecast data available for this date. Try a date within the next 7 days.');
+      }
+
+      const i = Math.min(hourIndex, data.hourly.time.length - 1);
+      return {
+        tempF: Math.round(data.hourly.temperature_2m[i]),
+        windMph: Math.round(data.hourly.wind_speed_10m[i]),
+        humidity: Math.round(data.hourly.relative_humidity_2m[i]),
+        precipChance: data.hourly.precipitation_probability[i],
+        sunsetTime: data.daily.sunset[0].split('T')[1],
+      };
+    }
+
+    async function fetchAqi(lat, lon, tz, date, hourIndex) {
+      try {
+        const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}`
+          + `&hourly=us_aqi`
+          + `&timezone=${encodeURIComponent(tz)}`
+          + `&start_date=${date}&end_date=${date}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.hourly && data.hourly.us_aqi) {
+          return data.hourly.us_aqi[hourIndex];
+        }
+      } catch (e) { /* best-effort */ }
+      return null;
+    }
+
+    function displayWeatherPreview(data) {
+      els.wpTemp.textContent = data.tempF + '\u00B0';
+      els.wpWind.textContent = data.windMph;
+      els.wpAqi.textContent = data.aqi !== null ? data.aqi : '\u2014';
+      els.wpHumidity.textContent = data.humidity + '%';
+      els.wpSunset.textContent = formatTime(data.sunsetTime);
+      els.wpPrecip.textContent = data.precipChance + '%';
+      els.weatherPreview.classList.add('visible');
+    }
+
     async function fetchWeather() {
-      const btn = document.getElementById('fetchWeatherBtn');
-      const status = document.getElementById('weatherStatus');
-      const preview = document.getElementById('weatherPreview');
-      const location = document.getElementById('rideLocation').value.trim();
-      const rideDate = document.getElementById('rideDate').value;
-      const rideTime = document.getElementById('rideTime').value;
+      const location = els.rideLocation.value.trim();
+      const rideDate = els.rideDate.value;
+      const rideTime = els.rideTime.value;
 
-      if (!location) {showStatus('error', 'Enter a location first.'); return;}
-      if (!rideDate) {showStatus('error', 'Enter a ride date first.'); return;}
+      if (!location) { showStatus('error', 'Enter a location first.'); return; }
+      if (!rideDate) { showStatus('error', 'Enter a ride date first.'); return; }
 
-      btn.disabled = true;
-      btn.textContent = 'Fetching…';
-      showStatus('loading', 'Looking up location…');
+      els.fetchWeatherBtn.disabled = true;
+      els.fetchWeatherBtn.textContent = 'Fetching\u2026';
+      showStatus('loading', 'Looking up location\u2026');
 
       try {
-        // Step 1: Geocode location
-        const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`;
-        const geoRes = await fetch(geoUrl);
-        const geoData = await geoRes.json();
+        const geo = await geocodeLocation(location);
+        const label = `${geo.cityName}${geo.admin1 ? ', ' + geo.admin1 : ''}`;
+        showStatus('loading', `Found ${label}. Fetching forecast\u2026`);
 
-        if (!geoData.results || geoData.results.length === 0) {
-          throw new Error(`Could not find "${location}". Try a more specific city name.`);
-        }
-
-        const {latitude, longitude, timezone, name, admin1} = geoData.results[0];
-        showStatus('loading', `Found ${name}${admin1 ? ', ' + admin1 : ''}. Fetching forecast…`);
-
-        // Step 2: Fetch weather forecast
         const [startH] = rideTime.split(':').map(Number);
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}`
-          + `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation_probability`
-          + `&daily=sunset`
-          + `&temperature_unit=fahrenheit&wind_speed_unit=mph`
-          + `&timezone=${encodeURIComponent(timezone)}`
-          + `&start_date=${rideDate}&end_date=${rideDate}`;
+        const forecast = await fetchForecast(geo.latitude, geo.longitude, geo.timezone, rideDate, startH);
+        const aqi = await fetchAqi(geo.latitude, geo.longitude, geo.timezone, rideDate, startH);
 
-        const weatherRes = await fetch(weatherUrl);
-        const weather = await weatherRes.json();
+        els.rideTemp.value = forecast.tempF;
+        els.rideWind.value = forecast.windMph;
+        if (aqi !== null) els.rideAqi.value = aqi;
+        els.rideSunset.value = forecast.sunsetTime;
 
-        if (!weather.hourly || !weather.hourly.time || weather.hourly.time.length === 0) {
-          throw new Error('No forecast data available for this date. Try a date within the next 7 days.');
-        }
+        weatherData = { ...forecast, aqi, locationName: label };
+        displayWeatherPreview(weatherData);
 
-        // Find the hour closest to ride start
-        const targetHour = startH;
-        const hourIndex = Math.min(targetHour, weather.hourly.time.length - 1);
-
-        const tempF = Math.round(weather.hourly.temperature_2m[hourIndex]);
-        const windMph = Math.round(weather.hourly.wind_speed_10m[hourIndex]);
-        const humidity = Math.round(weather.hourly.relative_humidity_2m[hourIndex]);
-        const precipChance = weather.hourly.precipitation_probability[hourIndex];
-        const sunsetRaw = weather.daily.sunset[0]; // e.g. "2026-03-10T18:22"
-        const sunsetTime = sunsetRaw.split('T')[1]; // "18:22"
-
-        // Step 3: Fetch AQI
-        let aqi = null;
-        try {
-          const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}`
-            + `&hourly=us_aqi`
-            + `&timezone=${encodeURIComponent(timezone)}`
-            + `&start_date=${rideDate}&end_date=${rideDate}`;
-          const aqiRes = await fetch(aqiUrl);
-          const aqiData = await aqiRes.json();
-          if (aqiData.hourly && aqiData.hourly.us_aqi) {
-            aqi = aqiData.hourly.us_aqi[hourIndex];
-          }
-        } catch (e) {
-          // AQI is best-effort; continue without it
-        }
-
-        // Step 4: Fill in the form fields
-        document.getElementById('rideTemp').value = tempF;
-        document.getElementById('rideWind').value = windMph;
-        if (aqi !== null) document.getElementById('rideAqi').value = aqi;
-        document.getElementById('rideSunset').value = sunsetTime;
-
-        // Step 5: Show preview
-        document.getElementById('wpTemp').textContent = tempF + '°';
-        document.getElementById('wpWind').textContent = windMph;
-        document.getElementById('wpAqi').textContent = aqi !== null ? aqi : '—';
-        document.getElementById('wpHumidity').textContent = humidity + '%';
-        document.getElementById('wpSunset').textContent = formatTime(sunsetTime);
-        document.getElementById('wpPrecip').textContent = precipChance + '%';
-        preview.classList.add('visible');
-
-        weatherData = {tempF, windMph, aqi, humidity, precipChance, sunsetTime, locationName: `${name}${admin1 ? ', ' + admin1 : ''}`};
-
-        showStatus('success', `Weather loaded for ${name}${admin1 ? ', ' + admin1 : ''} on ${rideDate}. Fields auto-filled — adjust if needed.`);
-
+        showStatus('success', `Weather loaded for ${label} on ${rideDate}. Fields auto-filled \u2014 adjust if needed.`);
       } catch (err) {
         showStatus('error', err.message || 'Failed to fetch weather. You can enter values manually.');
-        preview.classList.remove('visible');
+        els.weatherPreview.classList.remove('visible');
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Fetch Weather for Ride Day';
+        els.fetchWeatherBtn.disabled = false;
+        els.fetchWeatherBtn.textContent = 'Fetch Weather for Ride Day';
       }
     }
 
     function showStatus(type, msg) {
-      const el = document.getElementById('weatherStatus');
-      el.className = 'weather-status ' + type;
-      el.textContent = msg;
+      els.weatherStatus.className = 'weather-status ' + type;
+      els.weatherStatus.textContent = msg;
     }
 
     // ── Clothing Logic ────────────────────────────────────────────────
 
     function getClothingItems(temp) {
       const items = [
-        {id: 'bibs', text: temp < 50 ? 'Classic winter tights' : temp < 60 ? 'Bib shorts + leg warmers' : 'Bib shorts', detail: ''},
+        {id: 'bibs', text: temp < 50 ? 'Classic winter tights' : temp < 60 ? 'Bib shorts + leg warmers' : 'Bib shorts'},
         {id: 'socks', text: 'Pro Team Socks' + (temp < 50 ? ' + overshoes' : ''), detail: temp < 60 ? ' + oversocks' : ''},
-        {id: 'shoes', text: 'Shoes', detail: ''},
-        {id: 'handkerchief', text: 'Handkerchief', detail: ''},
-        {id: 'sunglasses', text: 'Sunglasses', detail: ''},
-        {id: 'helmet', text: 'Helmet', detail: ''},
-        {id: 'gloves', text: temp < 50 ? 'Winter gloves' : temp < 60 ? 'Long-fingered gloves' : 'Short-fingered gloves', detail: ''},
-        {id: 'whoop', text: 'WHOOP arm band', detail: ''},
-        {id: 'bikebag', text: 'Bike bag (credit card, ID, phone)', detail: ''},
+        {id: 'shoes', text: 'Shoes'},
+        {id: 'handkerchief', text: 'Handkerchief'},
+        {id: 'sunglasses', text: 'Sunglasses'},
+        {id: 'helmet', text: 'Helmet'},
+        {id: 'gloves', text: temp < 50 ? 'Winter gloves' : temp < 60 ? 'Long-fingered gloves' : 'Short-fingered gloves'},
+        {id: 'whoop', text: 'WHOOP arm band'},
+        {id: 'bikebag', text: 'Bike bag (credit card, ID, phone)'},
       ];
 
-      if (temp > 70) {
-        items.unshift({id: 'jersey', text: 'Jersey', detail: ''});
-      }
-      if (temp >= 65 && temp < 70) {
-        items.unshift({id: 'baselayer', text: 'Pro Team base layer', detail: 'Lightweight mesh'});
-        items.unshift({id: 'jersey', text: 'Brevet jersey', detail: ''});
-      }
-      if (temp >= 60 && temp < 65) {
-        items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
-        items.unshift({id: 'jersey', text: 'Brevet jersey', detail: ''});
-      }
-      if (temp >= 55 && temp < 60) {
-        items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
-        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
-      }
-      if (temp >= 50 && temp < 55) {
-        items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
-        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
-        items.push({id: 'windjacket', text: 'Classic Wind jacket', detail: ''});
-      }
-      if (temp >= 40 && temp < 50) {
-        items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
-        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
-        items.push({id: 'softshell', text: 'Classic Softshell jacket', detail: ''});
-        items.push({id: 'woolhat', text: 'Wool hat (optional — helps with ears)', detail: ''});
-      }
-      if (temp >= 30 && temp < 40) {
-        items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
-        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
-        items.push({id: 'softshell', text: 'Classic Softshell jacket', detail: ''});
-        items.push({id: 'woolhat', text: 'Wool hat (must)', detail: ''});
-        items.push({id: 'scarf', text: 'Cycling scarf', detail: ''});
+      const rule = CLOTHING_RULES.find(r => temp >= r.min && temp <= r.max);
+      if (rule) {
+        if (rule.prepend) rule.prepend.slice().reverse().forEach(item => items.unshift({...item}));
+        if (rule.append) rule.append.forEach(item => items.push({...item}));
       }
 
       return items;
@@ -898,19 +913,19 @@
 
     // ── Checklist Generation ──────────────────────────────────────────
 
-    function generateChecklist() {
-      const miles = parseFloat(document.getElementById('rideMiles').value);
-      const temp = parseFloat(document.getElementById('rideTemp').value);
-      const wind = parseFloat(document.getElementById('rideWind').value);
-      const aqi = parseFloat(document.getElementById('rideAqi').value);
-      const bikeKey = document.getElementById('rideBike').value;
-      const meetup = document.getElementById('rideMeetup').value.trim();
-      const needLock = document.getElementById('rideLock').value === 'yes';
-      const rideDate = document.getElementById('rideDate').value;
-      const rideTime = document.getElementById('rideTime').value;
-      const location = document.getElementById('rideLocation').value;
+    function generateChecklist(isRestore) {
+      const miles = parseFloat(els.rideMiles.value);
+      const temp = parseFloat(els.rideTemp.value);
+      const wind = parseFloat(els.rideWind.value);
+      const aqi = parseFloat(els.rideAqi.value);
+      const bikeKey = els.rideBike.value;
+      const meetup = els.rideMeetup.value.trim();
+      const needLock = els.rideLock.value === 'yes';
+      const rideDate = els.rideDate.value;
+      const rideTime = els.rideTime.value;
+      const location = els.rideLocation.value;
 
-      if (!miles || !temp) {alert('Please enter miles and temperature (or fetch weather first).'); return;}
+      if (!miles || !temp) { alert('Please enter miles and temperature (or fetch weather first).'); return; }
 
       const bike = BIKES[bikeKey];
       const rideDurationHrs = miles / 15;
@@ -918,7 +933,7 @@
       const waffles = hours;
 
       // Sunset check
-      const sunsetStr = document.getElementById('rideSunset').value;
+      const sunsetStr = els.rideSunset.value;
       const [startH, startM] = rideTime.split(':').map(Number);
       const [sunH, sunM] = sunsetStr.split(':').map(Number);
       const startMinutes = startH * 60 + startM;
@@ -931,126 +946,127 @@
       let weatherClass = 'perfect';
       let weatherLabel = 'Perfect conditions';
       if (temp < 50 || temp > 90 || aqi > 100 || wind > 15) {
-        weatherClass = 'warning'; weatherLabel = 'Conditions flagged — ride with caution';
+        weatherClass = 'warning'; weatherLabel = 'Conditions flagged \u2014 ride with caution';
       } else if (temp < 60 || temp > 85 || aqi > 50 || wind > 10) {
         weatherClass = 'tolerable'; weatherLabel = 'Tolerable conditions';
       }
       if (temp < 30) {
-        weatherClass = 'warning'; weatherLabel = 'Below 30°F — consider staying inside!';
+        weatherClass = 'warning'; weatherLabel = 'Below 30\u00B0F \u2014 consider staying inside!';
       }
 
-      // Extra weather details from API if available
-      const humidity = weatherData ? weatherData.humidity + '%' : '—';
-      const precipChance = weatherData ? weatherData.precipChance + '%' : '—';
+      const humidity = weatherData ? weatherData.humidity + '%' : '\u2014';
+      const precipChance = weatherData ? weatherData.precipChance + '%' : '\u2014';
       const locationName = weatherData ? weatherData.locationName : location;
 
-      // Build weather banner
-      document.getElementById('weatherBanner').innerHTML = `
+      // Build weather banner (all values are numbers or from weatherData, safe to interpolate)
+      els.weatherBanner.innerHTML = `
       <div class="weather-banner">
         <h3>Weather</h3>
         <div class="weather-grid">
-          <div class="weather-stat"><div class="val">${temp}°F</div><div class="label">Temperature</div></div>
-          <div class="weather-stat"><div class="val">${wind || '—'} MPH</div><div class="label">Wind</div></div>
-          <div class="weather-stat"><div class="val">${aqi || '—'}</div><div class="label">AQI</div></div>
-          <div class="weather-stat"><div class="val">${humidity}</div><div class="label">Humidity</div></div>
-          <div class="weather-stat"><div class="val">${precipChance}</div><div class="label">Rain chance</div></div>
-          <div class="weather-stat"><div class="val">${sunsetStr ? formatTime(sunsetStr) : '—'}</div><div class="label">Sunset</div></div>
+          <div class="weather-stat"><div class="val">${esc(String(temp))}\u00B0F</div><div class="label">Temperature</div></div>
+          <div class="weather-stat"><div class="val">${wind ? esc(String(wind)) + ' MPH' : '\u2014'}</div><div class="label">Wind</div></div>
+          <div class="weather-stat"><div class="val">${aqi ? esc(String(aqi)) : '\u2014'}</div><div class="label">AQI</div></div>
+          <div class="weather-stat"><div class="val">${esc(humidity)}</div><div class="label">Humidity</div></div>
+          <div class="weather-stat"><div class="val">${esc(precipChance)}</div><div class="label">Rain chance</div></div>
+          <div class="weather-stat"><div class="val">${sunsetStr ? esc(formatTime(sunsetStr)) : '\u2014'}</div><div class="label">Sunset</div></div>
         </div>
-        <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">${locationName}</div>
-        <div class="weather-tag ${weatherClass}">${weatherLabel}</div>
+        <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">${esc(locationName)}</div>
+        <div class="weather-tag ${weatherClass}">${esc(weatherLabel)}</div>
       </div>
     `;
 
       // Build ride summary
       const dateStr = new Date(rideDate + 'T12:00:00').toLocaleDateString('en-US', {weekday: 'long', month: 'short', day: 'numeric'});
-      document.getElementById('rideSummary').innerHTML = `
+      let summaryP = `<span class="detail">${esc(dateStr)} at ${esc(formatTime(rideTime))}</span><br>`;
+      summaryP += `<span class="detail">${esc(String(miles))} miles</span> on the <span class="detail">${esc(bike.name)}</span><br>`;
+      summaryP += `Est. duration: <span class="detail">~${hours} hour${hours > 1 ? 's' : ''}</span>`;
+      if (meetup) summaryP += `<br>Meeting: <span class="detail">${esc(meetup)}</span>`;
+      if (ridingAfterDark) summaryP += `<br><span style="color:var(--yellow);">Sunset at ${esc(formatTime(sunsetStr))} \u2014 you may be riding in the dark. Ensure lights are charged and mounted.</span>`;
+
+      els.rideSummary.innerHTML = `
       <div class="ride-summary">
         <h3>Ride Summary</h3>
-        <p>
-          <span class="detail">${dateStr} at ${formatTime(rideTime)}</span><br>
-          <span class="detail">${miles} miles</span> on the <span class="detail">${bike.name}</span><br>
-          Est. duration: <span class="detail">~${hours} hour${hours > 1 ? 's' : ''}</span>
-          ${meetup ? '<br>Meeting: <span class="detail">' + meetup + '</span>' : ''}
-          ${ridingAfterDark ? '<br><span style="color:var(--yellow);">Sunset at ' + formatTime(sunsetStr) + ' — you may be riding in the dark. Ensure lights are charged and mounted.</span>' : ''}
-        </p>
+        <p>${summaryP}</p>
       </div>
     `;
 
       // Build sections
       const sections = [];
 
-      // Night-before bike prep
       const bikeItems = [
         {id: 'wahoo', text: 'Charge Wahoo ROAM 3', detail: 'Bike computer'},
-        {id: 'lights', text: 'Charge Garmin lights', detail: ''},
-        {id: 'chain', text: 'Check chain — needs wax?', detail: ''},
-        {id: 'tires', text: `Pump tires — Front: ${bike.frontPsi} PSI / Rear: ${bike.rearPsi} PSI`, detail: `${bike.tire}`},
-        {id: 'route', text: 'Load route on Wahoo', detail: ''},
+        {id: 'lights', text: 'Charge Garmin lights'},
+        {id: 'chain', text: 'Check chain \u2014 needs wax?'},
+        {id: 'tires', text: `Pump tires \u2014 Front: ${bike.frontPsi} PSI / Rear: ${bike.rearPsi} PSI`, detail: bike.tire},
+        {id: 'route', text: 'Load route on Wahoo'},
       ];
       if (needLock) bikeItems.push({id: 'lock', text: 'Pack bike lock', detail: 'Urban ride with stops'});
       if (ridingAfterDark) bikeItems.push({id: 'extralights', text: 'Mount front & rear Garmin lights on bike', detail: 'Ride may extend past sunset (' + formatTime(sunsetStr) + ')'});
-      sections.push({title: 'Bike Prep (Night Before)', emoji: '🔧', items: bikeItems});
+      sections.push({title: 'Bike Prep (Night Before)', emoji: '\uD83D\uDD27', items: bikeItems});
 
-      // Clothing
       const clothingItems = getClothingItems(temp);
-      sections.push({title: 'Clothing', emoji: '👕', items: clothingItems});
+      sections.push({title: 'Clothing', emoji: '\uD83D\uDC55', items: clothingItems});
 
-      // Food
       const foodItems = [
-        {id: 'preride', text: 'Pre-ride meal', detail: 'Oatmeal + berries or cereal + fruit — eat 1–2 hrs before'},
+        {id: 'preride', text: 'Pre-ride meal', detail: 'Oatmeal + berries or cereal + fruit \u2014 eat 1\u20132 hrs before'},
         {id: 'waffles', text: `Pack ${waffles} Honey Stinger Waffle${waffles > 1 ? 's' : ''}`, detail: `${waffles} waffle${waffles > 1 ? 's' : ''} for ~${hours} hr ride`},
-        {id: 'bottles', text: 'Fill 2 bottles with Skratch mix', detail: ''},
+        {id: 'bottles', text: 'Fill 2 bottles with Skratch mix'},
       ];
       if (extraBags > 0) {
         foodItems.push({id: 'bags', text: `Pack ${extraBags} Ziploc bag${extraBags > 1 ? 's' : ''} of Skratch mix`, detail: 'For refills on the road'});
       }
       foodItems.push({id: 'recovery', text: 'Prep Skratch Chocolate Recovery Shake', detail: 'Have it ready in the fridge for post-ride'});
-      sections.push({title: 'Food & Hydration', emoji: '🍯', items: foodItems});
+      sections.push({title: 'Food & Hydration', emoji: '\uD83C\uDF6F', items: foodItems});
 
-      // Group ride
       if (meetup) {
         sections.push({
-          title: 'Meetup', emoji: '👥', items: [
+          title: 'Meetup', emoji: '\uD83D\uDC65', items: [
             {id: 'meetup', text: meetup, detail: 'Confirm with your group'},
             {id: 'traveltime', text: 'Account for travel time to start', detail: 'Work backwards from meeting time'},
           ]
         });
       }
 
-      // Render
+      // Render checklist items
+      const savedChecks = isRestore ? {...checkState} : {};
       checkState = {};
       let html = '';
+      const CHECK_SVG = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
       sections.forEach((sec, si) => {
         const sectionId = 'sec_' + si;
         let itemsHtml = '';
         sec.items.forEach((item, ii) => {
           const key = sectionId + '_' + item.id + '_' + ii;
-          checkState[key] = false;
+          const wasChecked = isRestore && savedChecks[key];
+          checkState[key] = !!wasChecked;
+          const checkedClass = wasChecked ? ' checked' : '';
+          const detailHtml = item.detail ? '<div class="item-detail">' + esc(item.detail) + '</div>' : '';
           itemsHtml += `
-          <div class="item" data-key="${key}" onclick="toggleItem(this)">
-            <div class="checkbox"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            <div><div class="item-text">${item.text}</div>${item.detail ? '<div class="item-detail">' + item.detail + '</div>' : ''}</div>
+          <div class="item${checkedClass}" data-key="${esc(key)}">
+            <div class="checkbox">${CHECK_SVG}</div>
+            <div><div class="item-text">${esc(item.text)}</div>${detailHtml}</div>
           </div>`;
         });
         html += `
         <div class="section" id="${sectionId}">
-          <div class="section-header" onclick="toggleSection('${sectionId}')">
-            <h3>${sec.emoji} ${sec.title} <span class="section-badge" id="${sectionId}_badge">0/${sec.items.length}</span></h3>
-            <span class="section-chevron">▼</span>
+          <div class="section-header">
+            <h3>${sec.emoji} ${esc(sec.title)} <span class="section-badge" id="${sectionId}_badge">0/${sec.items.length}</span></h3>
+            <span class="section-chevron">\u25BC</span>
           </div>
           <div class="section-items">${itemsHtml}</div>
         </div>`;
       });
 
-      document.getElementById('checklistContainer').innerHTML = html;
-      document.getElementById('setupScreen').classList.add('hidden');
-      document.getElementById('checklistScreen').classList.remove('hidden');
-      document.getElementById('progressBar').classList.remove('hidden');
-      document.getElementById('progressText').classList.remove('hidden');
-      document.getElementById('headerTitle').textContent = `${miles}mi Ride Prep`;
-      document.getElementById('headerSub').textContent = `${bike.name} — ${dateStr}`;
+      els.checklistContainer.innerHTML = html;
+      els.setupScreen.classList.add('hidden');
+      els.checklistScreen.classList.remove('hidden');
+      els.progressBar.classList.remove('hidden');
+      els.progressText.classList.remove('hidden');
+      els.headerTitle.textContent = `${miles}mi Ride Prep`;
+      els.headerSub.textContent = `${bike.name} \u2014 ${dateStr}`;
       updateProgress();
-      saveState();
+      if (!isRestore) saveState();
     }
 
     function toggleItem(el) {
@@ -1061,16 +1077,12 @@
       saveState();
     }
 
-    function toggleSection(id) {
-      document.getElementById(id).classList.toggle('collapsed');
-    }
-
     function updateProgress() {
       const total = Object.keys(checkState).length;
       const done = Object.values(checkState).filter(Boolean).length;
       const pct = total > 0 ? (done / total * 100) : 0;
-      document.getElementById('progressFill').style.width = pct + '%';
-      document.getElementById('progressText').textContent = `${done}/${total} items — ${Math.round(pct)}%`;
+      els.progressFill.style.width = pct + '%';
+      els.progressText.textContent = `${done}/${total} items \u2014 ${Math.round(pct)}%`;
 
       document.querySelectorAll('.section').forEach(sec => {
         const items = sec.querySelectorAll('.item');
@@ -1095,27 +1107,27 @@
         clearState();
         checkState = {};
         weatherData = null;
-        document.getElementById('setupScreen').classList.remove('hidden');
-        document.getElementById('checklistScreen').classList.add('hidden');
-        document.getElementById('progressBar').classList.add('hidden');
-        document.getElementById('progressText').classList.add('hidden');
-        document.getElementById('headerTitle').textContent = 'Ride Prep';
-        document.getElementById('headerSub').textContent = 'Get ready for tomorrow\'s ride';
-        document.getElementById('rideMiles').value = '';
-        document.getElementById('rideTemp').value = '';
-        document.getElementById('rideWind').value = '';
-        document.getElementById('rideAqi').value = '';
-        document.getElementById('rideMeetup').value = '';
-        document.getElementById('rideLock').value = 'no';
-        document.getElementById('rideSunset').value = '18:30';
-        document.getElementById('weatherStatus').className = 'weather-status';
-        document.getElementById('weatherPreview').classList.remove('visible');
-        document.getElementById('checklistContainer').innerHTML = '';
-        document.getElementById('weatherBanner').innerHTML = '';
-        document.getElementById('rideSummary').innerHTML = '';
+        els.setupScreen.classList.remove('hidden');
+        els.checklistScreen.classList.add('hidden');
+        els.progressBar.classList.add('hidden');
+        els.progressText.classList.add('hidden');
+        els.headerTitle.textContent = 'Ride Prep';
+        els.headerSub.textContent = 'Get ready for tomorrow\'s ride';
+        els.rideMiles.value = '';
+        els.rideTemp.value = '';
+        els.rideWind.value = '';
+        els.rideAqi.value = '';
+        els.rideMeetup.value = '';
+        els.rideLock.value = 'no';
+        els.rideSunset.value = '18:30';
+        els.weatherStatus.className = 'weather-status';
+        els.weatherPreview.classList.remove('visible');
+        els.checklistContainer.innerHTML = '';
+        els.weatherBanner.innerHTML = '';
+        els.rideSummary.innerHTML = '';
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        document.getElementById('rideDate').value = tomorrow.toISOString().split('T')[0];
+        els.rideDate.value = tomorrow.toISOString().split('T')[0];
       }
     }
   </script>
