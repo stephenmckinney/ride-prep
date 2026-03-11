@@ -848,42 +848,46 @@
 
     function getClothingItems(temp) {
       const items = [
-        {id: 'jersey', text: 'Jersey', detail: ''},
-        {id: 'bibs', text: temp < 50 ? 'Classic winter tights' : temp < 55 ? 'Bib shorts + leg warmers' : 'Bib shorts', detail: ''},
-        {id: 'socks', text: 'Socks' + (temp < 55 ? ' + oversocks' : ''), detail: temp < 50 ? 'Pro Team socks + overshoes' : 'Pro Team socks'},
+        {id: 'bibs', text: temp < 50 ? 'Classic winter tights' : temp < 60 ? 'Bib shorts + leg warmers' : 'Bib shorts', detail: ''},
+        {id: 'socks', text: 'Pro Team Socks' + (temp < 50 ? ' + overshoes' : ''), detail: temp < 60 ? ' + oversocks' : ''},
         {id: 'shoes', text: 'Shoes', detail: ''},
         {id: 'handkerchief', text: 'Handkerchief', detail: ''},
         {id: 'sunglasses', text: 'Sunglasses', detail: ''},
         {id: 'helmet', text: 'Helmet', detail: ''},
-        {id: 'gloves', text: temp < 40 ? 'Winter gloves' : temp < 55 ? 'Long-fingered gloves' : 'Short-fingered gloves', detail: ''},
+        {id: 'gloves', text: temp < 50 ? 'Winter gloves' : temp < 60 ? 'Long-fingered gloves' : 'Short-fingered gloves', detail: ''},
         {id: 'whoop', text: 'WHOOP arm band', detail: ''},
         {id: 'bikebag', text: 'Bike bag (credit card, ID, phone)', detail: ''},
       ];
 
-      if (temp >= 70) {
+      if (temp > 70) {
+        items.unshift({id: 'jersey', text: 'Jersey', detail: ''});
+      }
+      if (temp >= 65 && temp < 70) {
         items.unshift({id: 'baselayer', text: 'Pro Team base layer', detail: 'Lightweight mesh'});
+        items.unshift({id: 'jersey', text: 'Brevet jersey', detail: ''});
       }
       if (temp >= 60 && temp < 65) {
         items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
+        items.unshift({id: 'jersey', text: 'Brevet jersey', detail: ''});
       }
       if (temp >= 55 && temp < 60) {
         items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
-        items.push({id: 'longsleeve', text: 'Long-sleeve jersey', detail: ''});
-      }
-      if (temp >= 65 && temp < 70) {
-        items.push({id: 'brevet', text: 'Brevet jersey', detail: 'Extra layer for cool mornings'});
+        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
       }
       if (temp >= 50 && temp < 55) {
         items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
+        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
         items.push({id: 'windjacket', text: 'Classic Wind jacket', detail: ''});
       }
       if (temp >= 40 && temp < 50) {
         items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
+        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
         items.push({id: 'softshell', text: 'Classic Softshell jacket', detail: ''});
         items.push({id: 'woolhat', text: 'Wool hat (optional — helps with ears)', detail: ''});
       }
       if (temp >= 30 && temp < 40) {
         items.unshift({id: 'baselayer', text: 'Merino wool base layer', detail: ''});
+        items.unshift({id: 'jersey', text: 'Long-sleeve jersey', detail: ''});
         items.push({id: 'softshell', text: 'Classic Softshell jacket', detail: ''});
         items.push({id: 'woolhat', text: 'Wool hat (must)', detail: ''});
         items.push({id: 'scarf', text: 'Cycling scarf', detail: ''});
