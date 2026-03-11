@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ride Prep Tests</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      padding: 24px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20px; margin-bottom: 16px; }
+    .suite { margin-bottom: 20px; }
+    .suite-title { font-size: 14px; font-weight: 600; color: #8b949e; margin-bottom: 8px; }
+    .result {
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 13px;
+      font-family: monospace;
+    }
+    .pass { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
+    .fail { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+    .summary {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .summary.all-pass { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
+    .summary.has-fail { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+  </style>
+</head>
+<body>
+  <h1>Ride Prep Tests</h1>
+  <div id="results"></div>
+  <div id="summary"></div>
+
+  <script src="../app.js"></script>
+  <script src="tests.js"></script>
+</body>
+</html>
