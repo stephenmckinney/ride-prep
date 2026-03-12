@@ -11,10 +11,36 @@ function formatTime(t) {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
+const METRIC_THRESHOLDS = {
+  temp: [
+    { check: v => v < 50 || v > 90, level: 'warning' },
+    { check: v => v < 60 || v > 85, level: 'tolerable' },
+  ],
+  wind: [
+    { check: v => v > 15, level: 'warning' },
+    { check: v => v > 10, level: 'tolerable' },
+  ],
+  aqi: [
+    { check: v => v > 100, level: 'warning' },
+    { check: v => v > 50, level: 'tolerable' },
+  ],
+};
+
+function assessMetric(type, value) {
+  if (value === null || value === undefined || isNaN(value)) return 'perfect';
+  const thresholds = METRIC_THRESHOLDS[type];
+  if (!thresholds) return 'perfect';
+  for (const t of thresholds) {
+    if (t.check(value)) return t.level;
+  }
+  return 'perfect';
+}
+
 function assessWeather(temp, wind, aqi) {
   if (temp < 30) return { cls: 'warning', label: 'Below 30\u00B0F \u2014 consider staying inside!' };
-  if (temp < 50 || temp > 90 || aqi > 100 || wind > 15) return { cls: 'warning', label: 'Conditions flagged \u2014 ride with caution' };
-  if (temp < 60 || temp > 85 || aqi > 50 || wind > 10) return { cls: 'tolerable', label: 'Tolerable conditions' };
+  const levels = [assessMetric('temp', temp), assessMetric('wind', wind), assessMetric('aqi', aqi)];
+  if (levels.includes('warning')) return { cls: 'warning', label: 'Conditions flagged \u2014 ride with caution' };
+  if (levels.includes('tolerable')) return { cls: 'tolerable', label: 'Tolerable conditions' };
   return { cls: 'perfect', label: 'Perfect conditions' };
 }
 
@@ -338,19 +364,22 @@ if (typeof document !== 'undefined') {
     const precipChance = weatherData ? weatherData.precipChance + '%' : '\u2014';
     const locationName = weatherData ? weatherData.locationName : location;
 
+    const tempCls = assessMetric('temp', temp);
+    const windCls = assessMetric('wind', wind);
+    const aqiCls = assessMetric('aqi', aqi);
+
     els.weatherBanner.innerHTML = `
     <div class="weather-banner">
-      <h3>Weather</h3>
+      <div class="weather-tag ${weather.cls}">${esc(weather.label)}</div>
       <div class="weather-grid">
-        <div class="weather-stat"><div class="val">${esc(String(temp))}\u00B0F</div><div class="label">Temperature</div></div>
-        <div class="weather-stat"><div class="val">${wind ? esc(String(wind)) + ' MPH' : '\u2014'}</div><div class="label">Wind</div></div>
-        <div class="weather-stat"><div class="val">${aqi ? esc(String(aqi)) : '\u2014'}</div><div class="label">AQI</div></div>
+        <div class="weather-stat"><div class="val metric-${tempCls}">${esc(String(temp))}\u00B0F</div><div class="label">Temperature</div></div>
+        <div class="weather-stat"><div class="val metric-${windCls}">${wind ? esc(String(wind)) + ' MPH' : '\u2014'}</div><div class="label">Wind</div></div>
+        <div class="weather-stat"><div class="val metric-${aqiCls}">${aqi ? esc(String(aqi)) : '\u2014'}</div><div class="label">AQI</div></div>
         <div class="weather-stat"><div class="val">${esc(humidity)}</div><div class="label">Humidity</div></div>
         <div class="weather-stat"><div class="val">${esc(precipChance)}</div><div class="label">Rain chance</div></div>
         <div class="weather-stat"><div class="val">${sunsetStr ? esc(formatTime(sunsetStr)) : '\u2014'}</div><div class="label">Sunset</div></div>
       </div>
       <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">${esc(locationName)}</div>
-      <div class="weather-tag ${weather.cls}">${esc(weather.label)}</div>
     </div>
   `;
 
@@ -513,5 +542,5 @@ if (typeof document !== 'undefined') {
 
 // ── Node.js exports for testing ──────────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { esc, formatTime, assessWeather, isRidingAfterDark, getClothingItems, getAccessoryItems };
+  module.exports = { esc, formatTime, assessWeather, assessMetric, isRidingAfterDark, getClothingItems, getAccessoryItems };
 }
