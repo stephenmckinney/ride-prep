@@ -335,11 +335,13 @@ async function fetchAqi(lat, lon, tz, date, startHourIndex, endHourIndex) {
     const data = await res.json();
     if (data.hourly?.us_aqi) {
       const len = data.hourly.us_aqi.length;
+      if (len === 0) return null;
       const start = Math.min(Math.max(0, startHourIndex), len - 1);
       const end = Math.min(Math.max(start, endHourIndex), len - 1);
-      let max = 0;
+      let max = null;
       for (let i = start; i <= end; i++) {
-        if (data.hourly.us_aqi[i] > max) max = data.hourly.us_aqi[i];
+        const val = data.hourly.us_aqi[i];
+        if (val != null && (max === null || val > max)) max = val;
       }
       return max;
     }
