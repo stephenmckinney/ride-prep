@@ -1,9 +1,17 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { esc, formatTime, assessWeather, isRidingAfterDark, getClothingItems, getAccessoryItems } = require('../app.js');
+const {
+  esc,
+  formatTime,
+  assessWeather,
+  assessMetric,
+  isRidingAfterDark,
+  getClothingItems,
+  getAccessoryItems,
+} = require('../app.js');
 
 function findItem(items, id) {
-  return items.find(i => i.id === id);
+  return items.find((i) => i.id === id);
 }
 
 // ── formatTime ──────────────────────────────────────────────────
@@ -35,7 +43,14 @@ test('formatTime: pads single-digit minutes', () => {
 // ── esc ─────────────────────────────────────────────────────────
 
 test('esc: escapes < and >', () => {
-  assert.equal(esc('<script>alert("xss")</script>'), '&lt;script&gt;alert("xss")&lt;/script&gt;');
+  assert.equal(
+    esc('<script>alert("xss")</script>'),
+    '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
+  );
+});
+
+test('esc: escapes double quotes', () => {
+  assert.equal(esc('a "b" c'), 'a &quot;b&quot; c');
 });
 
 test('esc: escapes &', () => {
@@ -115,7 +130,11 @@ test('getClothingItems: above 70F: plain jersey, bib shorts, short gloves', () =
   assert.equal(findItem(items, 'jersey').text, 'Jersey');
   assert.equal(findItem(items, 'bibs').text, 'Bib shorts');
   assert.equal(findItem(items, 'gloves').text, 'Short-fingered gloves');
-  assert.equal(findItem(items, 'baselayer'), undefined, 'no base layer above 70');
+  assert.equal(
+    findItem(items, 'baselayer'),
+    undefined,
+    'no base layer above 70',
+  );
 });
 
 test('getClothingItems: 65-70F: brevet jersey + pro team base layer', () => {
@@ -160,25 +179,43 @@ test('getClothingItems: 30-39F: softshell + wool hat + scarf', () => {
 
 test('getClothingItems: below 50F: shoes include overshoes', () => {
   const items = getClothingItems(45);
-  assert.ok(findItem(items, 'shoes').text.includes('overshoes'), 'should mention overshoes');
+  assert.ok(
+    findItem(items, 'shoes').text.includes('overshoes'),
+    'should mention overshoes',
+  );
 });
 
 test('getClothingItems: 50-59F: shoes include oversocks', () => {
   const items = getClothingItems(55);
-  assert.ok(findItem(items, 'shoes').text.includes('oversocks'), 'should mention oversocks');
+  assert.ok(
+    findItem(items, 'shoes').text.includes('oversocks'),
+    'should mention oversocks',
+  );
 });
 
 test('getClothingItems: 60F+: long-fingered gloves at 59, short-fingered at 60', () => {
-  assert.equal(findItem(getClothingItems(59), 'gloves').text, 'Long-fingered gloves');
-  assert.equal(findItem(getClothingItems(60), 'gloves').text, 'Short-fingered gloves');
+  assert.equal(
+    findItem(getClothingItems(59), 'gloves').text,
+    'Long-fingered gloves',
+  );
+  assert.equal(
+    findItem(getClothingItems(60), 'gloves').text,
+    'Short-fingered gloves',
+  );
 });
 
 test('getClothingItems: exactly 50F gets leg warmers not winter tights', () => {
-  assert.equal(findItem(getClothingItems(50), 'bibs').text, 'Bib shorts + leg warmers');
+  assert.equal(
+    findItem(getClothingItems(50), 'bibs').text,
+    'Bib shorts + leg warmers',
+  );
 });
 
 test('getClothingItems: exactly 49F gets winter tights', () => {
-  assert.equal(findItem(getClothingItems(49), 'bibs').text, 'Classic winter tights');
+  assert.equal(
+    findItem(getClothingItems(49), 'bibs').text,
+    'Classic winter tights',
+  );
 });
 
 // ── getAccessoryItems ──────────────────────────────────────────
@@ -194,8 +231,116 @@ test('getAccessoryItems: includes helmet, sunglasses, handkerchief, whoop, bike 
 
 test('getAccessoryItems: accessories not in clothing items', () => {
   const clothing = getClothingItems(75);
-  assert.equal(findItem(clothing, 'helmet'), undefined, 'helmet should not be in clothing');
-  assert.equal(findItem(clothing, 'sunglasses'), undefined, 'sunglasses should not be in clothing');
-  assert.equal(findItem(clothing, 'whoop'), undefined, 'whoop should not be in clothing');
-  assert.equal(findItem(clothing, 'bikebag'), undefined, 'bike bag should not be in clothing');
+  assert.equal(
+    findItem(clothing, 'helmet'),
+    undefined,
+    'helmet should not be in clothing',
+  );
+  assert.equal(
+    findItem(clothing, 'sunglasses'),
+    undefined,
+    'sunglasses should not be in clothing',
+  );
+  assert.equal(
+    findItem(clothing, 'whoop'),
+    undefined,
+    'whoop should not be in clothing',
+  );
+  assert.equal(
+    findItem(clothing, 'bikebag'),
+    undefined,
+    'bike bag should not be in clothing',
+  );
+});
+
+// ── assessMetric ──────────────────────────────────────────────────
+
+test('assessMetric: temp 49 is warning', () => {
+  assert.equal(assessMetric('temp', 49), 'warning');
+});
+
+test('assessMetric: temp 50 is tolerable', () => {
+  assert.equal(assessMetric('temp', 50), 'tolerable');
+});
+
+test('assessMetric: temp 60 is perfect', () => {
+  assert.equal(assessMetric('temp', 60), 'perfect');
+});
+
+test('assessMetric: null input returns perfect', () => {
+  assert.equal(assessMetric('temp', null), 'perfect');
+});
+
+test('assessMetric: NaN input returns perfect', () => {
+  assert.equal(assessMetric('temp', Number.NaN), 'perfect');
+});
+
+test('assessMetric: undefined input returns perfect', () => {
+  assert.equal(assessMetric('temp', undefined), 'perfect');
+});
+
+test('assessMetric: unknown type returns perfect', () => {
+  assert.equal(assessMetric('unknown', 50), 'perfect');
+});
+
+test('assessMetric: wind 10 is perfect', () => {
+  assert.equal(assessMetric('wind', 10), 'perfect');
+});
+
+test('assessMetric: wind 11 is tolerable', () => {
+  assert.equal(assessMetric('wind', 11), 'tolerable');
+});
+
+test('assessMetric: wind 15 is tolerable', () => {
+  assert.equal(assessMetric('wind', 15), 'tolerable');
+});
+
+test('assessMetric: wind 16 is warning', () => {
+  assert.equal(assessMetric('wind', 16), 'warning');
+});
+
+test('assessMetric: AQI 50 is perfect', () => {
+  assert.equal(assessMetric('aqi', 50), 'perfect');
+});
+
+test('assessMetric: AQI 51 is tolerable', () => {
+  assert.equal(assessMetric('aqi', 51), 'tolerable');
+});
+
+test('assessMetric: AQI 100 is tolerable', () => {
+  assert.equal(assessMetric('aqi', 100), 'tolerable');
+});
+
+test('assessMetric: AQI 101 is warning', () => {
+  assert.equal(assessMetric('aqi', 101), 'warning');
+});
+
+// ── getClothingItems edge cases ──────────────────────────────────
+
+test('getClothingItems: exactly 71F matches first CLOTHING_RULES boundary', () => {
+  const items = getClothingItems(71);
+  assert.equal(findItem(items, 'jersey').text, 'Jersey');
+  assert.equal(findItem(items, 'bibs').text, 'Bib shorts');
+  assert.equal(findItem(items, 'gloves').text, 'Short-fingered gloves');
+  assert.equal(findItem(items, 'shoes').text, 'Shoes');
+});
+
+test('getClothingItems: below 30F returns base items with no CLOTHING_RULES match', () => {
+  const items = getClothingItems(25);
+  assert.equal(findItem(items, 'bibs').text, 'Classic winter tights');
+  assert.equal(findItem(items, 'gloves').text, 'Winter gloves');
+  assert.ok(
+    findItem(items, 'shoes').text.includes('overshoes'),
+    'should include overshoes',
+  );
+  assert.equal(
+    findItem(items, 'jersey'),
+    undefined,
+    'no jersey rule matches below 30',
+  );
+  assert.equal(
+    findItem(items, 'baselayer'),
+    undefined,
+    'no base layer rule matches below 30',
+  );
 });

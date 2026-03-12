@@ -8,13 +8,15 @@ function suite(name) {
   currentSuite = name;
   const div = document.createElement('div');
   div.className = 'suite';
-  div.id = 'suite-' + name.replace(/\s+/g, '-');
+  div.id = `suite-${name.replace(/\s+/g, '-')}`;
   div.innerHTML = `<div class="suite-title">${name}</div>`;
   resultsEl.appendChild(div);
 }
 
 function test(name, fn) {
-  const suiteEl = resultsEl.querySelector(`#suite-${currentSuite.replace(/\s+/g, '-')}`);
+  const suiteEl = resultsEl.querySelector(
+    `#suite-${currentSuite.replace(/\s+/g, '-')}`,
+  );
   const div = document.createElement('div');
   try {
     fn();
@@ -35,7 +37,9 @@ function assert(condition, msg) {
 
 function assertEqual(actual, expected, msg) {
   if (actual !== expected) {
-    throw new Error(`${msg || 'assertEqual'}: expected "${expected}", got "${actual}"`);
+    throw new Error(
+      `${msg || 'assertEqual'}: expected "${expected}", got "${actual}"`,
+    );
   }
 }
 
@@ -72,7 +76,14 @@ test('pads single-digit minutes', () => {
 suite('esc');
 
 test('escapes < and >', () => {
-  assertEqual(esc('<script>alert("xss")</script>'), '&lt;script&gt;alert("xss")&lt;/script&gt;');
+  assertEqual(
+    esc('<script>alert("xss")</script>'),
+    '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
+  );
+});
+
+test('escapes double quotes', () => {
+  assertEqual(esc('a "b" c'), 'a &quot;b&quot; c');
 });
 
 test('escapes &', () => {
@@ -151,7 +162,10 @@ test('returns true when ride ends after sunset', () => {
 
 test('returns true when ride ends exactly at sunset', () => {
   // 15:30 + 3hrs = 18:30 = sunset, endMinutes > sunsetMinutes is false
-  assert(!isRidingAfterDark('15:30', 3, '18:30'), 'exactly at sunset is not after dark');
+  assert(
+    !isRidingAfterDark('15:30', 3, '18:30'),
+    'exactly at sunset is not after dark',
+  );
 });
 
 test('handles early morning ride finishing well before sunset', () => {
@@ -163,7 +177,7 @@ test('handles early morning ride finishing well before sunset', () => {
 suite('getClothingItems');
 
 function findItem(items, id) {
-  return items.find(i => i.id === id);
+  return items.find((i) => i.id === id);
 }
 
 test('above 70F: plain jersey, bib shorts, short gloves', () => {
@@ -216,32 +230,51 @@ test('30-39F: softshell + wool hat + scarf', () => {
 
 test('below 50F: shoes include overshoes', () => {
   const items = getClothingItems(45);
-  assert(findItem(items, 'shoes').text.includes('overshoes'), 'should mention overshoes');
+  assert(
+    findItem(items, 'shoes').text.includes('overshoes'),
+    'should mention overshoes',
+  );
 });
 
 test('50-59F: shoes include oversocks', () => {
   const items = getClothingItems(55);
-  assert(findItem(items, 'shoes').text.includes('oversocks'), 'should mention oversocks');
+  assert(
+    findItem(items, 'shoes').text.includes('oversocks'),
+    'should mention oversocks',
+  );
 });
 
 test('60F+: long-fingered gloves at 59, short-fingered at 60', () => {
-  assertEqual(findItem(getClothingItems(59), 'gloves').text, 'Long-fingered gloves');
-  assertEqual(findItem(getClothingItems(60), 'gloves').text, 'Short-fingered gloves');
+  assertEqual(
+    findItem(getClothingItems(59), 'gloves').text,
+    'Long-fingered gloves',
+  );
+  assertEqual(
+    findItem(getClothingItems(60), 'gloves').text,
+    'Short-fingered gloves',
+  );
 });
 
 test('boundary: exactly 50F gets leg warmers not winter tights', () => {
-  assertEqual(findItem(getClothingItems(50), 'bibs').text, 'Bib shorts + leg warmers');
+  assertEqual(
+    findItem(getClothingItems(50), 'bibs').text,
+    'Bib shorts + leg warmers',
+  );
 });
 
 test('boundary: exactly 49F gets winter tights', () => {
-  assertEqual(findItem(getClothingItems(49), 'bibs').text, 'Classic winter tights');
+  assertEqual(
+    findItem(getClothingItems(49), 'bibs').text,
+    'Classic winter tights',
+  );
 });
 
 // ── Summary ─────────────────────────────────────────────────────
 
 const summaryEl = document.getElementById('summary');
 const total = passed + failed;
-summaryEl.className = 'summary ' + (failed === 0 ? 'all-pass' : 'has-fail');
-summaryEl.textContent = failed === 0
-  ? `All ${total} tests passed`
-  : `${failed} of ${total} tests failed`;
+summaryEl.className = `summary ${failed === 0 ? 'all-pass' : 'has-fail'}`;
+summaryEl.textContent =
+  failed === 0
+    ? `All ${total} tests passed`
+    : `${failed} of ${total} tests failed`;
