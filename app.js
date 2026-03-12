@@ -737,7 +737,7 @@ void (() => {
         ],
       });
 
-      const clothingItems = getClothingItems(temp);
+      const clothingItems = getClothingItems(tempLow);
       sections.push({
         title: 'Clothing',
         emoji: '\uD83D\uDC55',
