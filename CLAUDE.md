@@ -1,25 +1,21 @@
 # Ride Prep
 
-## Testing
+## Testing & Linting
 
-After every code change, run the tests to validate the code works:
+After every code change, run the tests and linters:
 
 ```
 npm test
-```
-
-There is also a browser-based test suite at `tests/tests.html` for visual verification.
-
-## Linting
-
-```
 npm run lint        # check for issues
 npm run lint:fix    # auto-fix issues
 ```
 
+There is also a browser-based test suite at `tests/tests.html` for visual verification.
+
 ## Commits
 
-- Commit at logical stopping points — each commit should represent one feature, fix, or coherent changeset
+- Commit at logical stopping points — each commit should represent a coherent changeset
 - Run `npm test` and `npm run lint` before every commit
+- Run `npm run lint:fix` to auto-fix issues
 - Keep commit messages concise: a title line, then a bulleted list (or grouped bulleted lists) in the body
-- Avoid overly terse messages ("Fix lint") and overly verbose ones — aim for enough detail to understand the "why" at a glance via git blame
+- Avoid overly verbose messages and overly terse ones — aim for enough detail to understand the "why" at a glance via git blame
