@@ -1,774 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ride Prep">
-<meta name="theme-color" content="#0d1117">
-<meta name="description" content="Bike ride preparation checklist with live weather">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>Ride Prep</title>
-<style>
-  :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface-hover: #1c2129;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-muted: #8b949e;
-    --accent: #f0883e;
-    --accent-dim: rgba(240,136,62,0.15);
-    --green: #3fb950;
-    --green-dim: rgba(63,185,80,0.15);
-    --yellow: #d29922;
-    --yellow-dim: rgba(210,153,34,0.15);
-    --red: #f85149;
-    --red-dim: rgba(248,81,73,0.15);
-    --blue: #58a6ff;
-    --radius: 12px;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding-bottom: env(safe-area-inset-bottom, 20px);
-  }
-  .header {
-    position: sticky; top:0; z-index:100;
-    background: rgba(13,17,23,0.85);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 16px;
-    padding-top: calc(env(safe-area-inset-top, 12px) + 12px);
-  }
-  .header h1 { font-size:20px; font-weight:700; }
-  .header-sub { font-size:13px; color:var(--text-muted); margin-top:2px; }
-  .progress-bar {
-    width:100%; height:4px; background:var(--border); border-radius:2px; margin-top:10px; overflow:hidden;
-  }
-  .progress-fill {
-    height:100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius:2px;
-    transition: width 0.4s ease;
-  }
-  .progress-text { font-size:12px; color:var(--text-muted); margin-top:4px; text-align:right; }
-
-  .setup { padding:16px; }
-  .setup h2 { font-size:17px; font-weight:600; margin-bottom:12px; }
-  .field { margin-bottom:14px; }
-  .field label { display:block; font-size:13px; color:var(--text-muted); margin-bottom:5px; font-weight:500; }
-  .field input, .field select {
-    width:100%; padding:10px 12px; background:var(--surface); border:1px solid var(--border);
-    border-radius:8px; color:var(--text); font-size:16px; appearance:none; -webkit-appearance:none;
-  }
-  .field select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }
-  .field input:focus, .field select:focus { outline:none; border-color:var(--accent); }
-  .row { display:flex; gap:10px; }
-  .row .field { flex:1; }
-  .btn {
-    width:100%; padding:14px; border:none; border-radius:var(--radius); font-size:16px; font-weight:600;
-    cursor:pointer; transition: all 0.2s;
-  }
-  .btn-primary { background:var(--accent); color:#fff; }
-  .btn-primary:active { transform:scale(0.98); opacity:0.9; }
-  .btn-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); margin-top:10px; }
-  .btn-weather {
-    background:var(--surface); color:var(--blue); border:1px solid var(--blue);
-    padding:10px 14px; font-size:14px; font-weight:600; border-radius:8px; width:100%;
-    cursor:pointer; transition:all 0.2s; margin-bottom:14px;
-  }
-  .btn-weather:active { transform:scale(0.98); opacity:0.9; }
-  .btn-weather:disabled { opacity:0.5; cursor:default; }
-
-  .weather-status {
-    font-size:13px; padding:10px 14px; border-radius:8px; margin-bottom:14px;
-    display:none;
-  }
-  .weather-status.loading { display:block; background:var(--accent-dim); color:var(--accent); }
-  .weather-status.success { display:block; background:var(--green-dim); color:var(--green); }
-  .weather-status.error { display:block; background:var(--red-dim); color:var(--red); }
-
-  .weather-preview {
-    display:none; background:var(--surface); border:1px solid var(--border); border-radius:8px;
-    padding:12px; margin-bottom:14px;
-  }
-  .weather-preview.visible { display:block; }
-  .weather-preview .wp-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-  .weather-preview .wp-item { text-align:center; }
-  .weather-preview .wp-val { font-size:18px; font-weight:700; }
-  .weather-preview .wp-label { font-size:11px; color:var(--text-muted); }
-  .weather-preview .wp-row2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
-
-  .checklist { padding:0 16px 24px; }
-  .section {
-    margin-top:20px; background: var(--surface);
-    border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden;
-  }
-  .section-header {
-    display:flex; justify-content:space-between; align-items:center;
-    padding:14px 16px; cursor:pointer; user-select:none;
-  }
-  .section-header h3 { font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; }
-  .section-badge {
-    font-size:11px; font-weight:600; padding:2px 7px; border-radius:10px;
-    background:var(--accent-dim); color:var(--accent);
-  }
-  .section-badge.done { background:var(--green-dim); color:var(--green); }
-  .section-chevron { color:var(--text-muted); transition:transform 0.2s; font-size:14px; }
-  .section.collapsed .section-chevron { transform:rotate(-90deg); }
-  .section.collapsed .section-items { display:none; }
-  .section-items { border-top:1px solid var(--border); }
-
-  .item {
-    display:flex; align-items:flex-start; gap:12px; padding:12px 16px;
-    border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
-    transition: background 0.15s;
-  }
-  .item:last-child { border-bottom:none; }
-  .item:active { background:var(--surface-hover); }
-  .item.checked .item-text { color:var(--text-muted); text-decoration:line-through; }
-  .checkbox {
-    width:22px; height:22px; min-width:22px; border-radius:6px;
-    border:2px solid var(--border); display:flex; align-items:center; justify-content:center;
-    transition:all 0.2s; margin-top:1px;
-  }
-  .item.checked .checkbox { background:var(--green); border-color:var(--green); }
-  .checkbox svg { opacity:0; transition:opacity 0.2s; }
-  .item.checked .checkbox svg { opacity:1; }
-  .item-text { font-size:15px; line-height:1.4; }
-  .item-detail { font-size:12px; color:var(--text-muted); margin-top:2px; }
-
-  .weather-banner {
-    margin:16px; padding:16px; border-radius:var(--radius);
-    border:1px solid var(--border); background:var(--surface);
-  }
-  .weather-banner h3 { font-size:15px; margin-bottom:8px; }
-  .weather-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .weather-stat .val { font-size:17px; font-weight:600; }
-  .weather-stat .label { color:var(--text-muted); font-size:11px; }
-  .weather-tag {
-    display:inline-block; font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; margin-top:10px;
-  }
-  .weather-tag.perfect { background:var(--green-dim); color:var(--green); }
-  .weather-tag.tolerable { background:var(--yellow-dim); color:var(--yellow); }
-  .weather-tag.warning { background:var(--red-dim); color:var(--red); }
-
-  .ride-summary {
-    margin:16px; padding:14px 16px; border-radius:var(--radius);
-    background:var(--accent-dim); border:1px solid rgba(240,136,62,0.25);
-  }
-  .ride-summary h3 { font-size:14px; color:var(--accent); margin-bottom:6px; }
-  .ride-summary p { font-size:13px; color:var(--text-muted); line-height:1.5; }
-  .ride-summary .detail { color:var(--text); font-weight:500; }
-
-  .hidden { display:none; }
-  .footer-actions { padding:16px; padding-bottom:calc(env(safe-area-inset-bottom, 20px) + 16px); }
-
-  .divider { border:none; border-top:1px solid var(--border); margin:18px 0 14px; }
-  .section-label { font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ride Prep">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Bike ride preparation checklist with live weather">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Ride Prep</title>
 </head>
+
 <body>
 
-<div class="header">
-  <h1 id="headerTitle">Ride Prep</h1>
-  <div class="header-sub" id="headerSub">Get ready for tomorrow's ride</div>
-  <div class="progress-bar hidden" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
-  <div class="progress-text hidden" id="progressText"></div>
-</div>
-
-<!-- SETUP SCREEN -->
-<div id="setupScreen" class="setup">
-  <h2>Plan Your Ride</h2>
-
-  <div class="field">
-    <label>Ride Date</label>
-    <input type="date" id="rideDate">
+  <div class="header">
+    <h1 id="headerTitle">Ride Prep</h1>
+    <div class="header-sub" id="headerSub">Get ready for tomorrow's ride</div>
+    <div class="progress-bar hidden" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text hidden" id="progressText"></div>
   </div>
 
-  <div class="row">
+  <!-- SETUP SCREEN -->
+  <div id="setupScreen" class="setup">
+    <h2>Plan Your Ride</h2>
+
     <div class="field">
-      <label>Start Time</label>
-      <input type="time" id="rideTime" value="09:00">
+      <label>Ride Date</label>
+      <input type="date" id="rideDate">
     </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Start Time</label>
+        <input type="time" id="rideTime" value="09:00">
+      </div>
+      <div class="field">
+        <label>Miles</label>
+        <input type="number" id="rideMiles" placeholder="e.g. 40" inputmode="numeric">
+      </div>
+    </div>
+
     <div class="field">
-      <label>Miles</label>
-      <input type="number" id="rideMiles" placeholder="e.g. 40" inputmode="numeric">
+      <label>Location</label>
+      <input type="text" id="rideLocation" value="Washington, DC">
     </div>
-  </div>
 
-  <div class="field">
-    <label>Location</label>
-    <input type="text" id="rideLocation" value="Washington, DC">
-  </div>
-
-  <div class="field">
-    <label>Bike</label>
-    <select id="rideBike">
-      <option value="caledonia">Cervélo Caledonia-5 (Road)</option>
-      <option value="r3">Cervélo R3 (Road)</option>
-      <option value="cx">Open UP 700C (CX)</option>
-      <option value="gravel">Open UP 650B (Gravel)</option>
-      <option value="mtb">Ripley MTB</option>
-    </select>
-  </div>
-
-  <hr class="divider">
-  <div class="section-label">Weather</div>
-
-  <button class="btn-weather" id="fetchWeatherBtn" onclick="fetchWeather()">Fetch Weather for Ride Day</button>
-  <div class="weather-status" id="weatherStatus"></div>
-
-  <div class="weather-preview" id="weatherPreview">
-    <div class="wp-grid">
-      <div class="wp-item"><div class="wp-val" id="wpTemp">--</div><div class="wp-label">Temp °F</div></div>
-      <div class="wp-item"><div class="wp-val" id="wpWind">--</div><div class="wp-label">Wind MPH</div></div>
-      <div class="wp-item"><div class="wp-val" id="wpAqi">--</div><div class="wp-label">AQI</div></div>
-    </div>
-    <div class="wp-row2">
-      <div class="wp-item"><div class="wp-val" id="wpHumidity">--</div><div class="wp-label">Humidity %</div></div>
-      <div class="wp-item"><div class="wp-val" id="wpSunset">--</div><div class="wp-label">Sunset</div></div>
-    </div>
-    <div style="margin-top:8px;text-align:center;">
-      <div class="wp-item"><div class="wp-val" id="wpPrecip">--</div><div class="wp-label">Rain chance</div></div>
-    </div>
-  </div>
-
-  <div class="row">
     <div class="field">
-      <label>Temperature °F</label>
-      <input type="number" id="rideTemp" placeholder="auto-filled" inputmode="numeric">
+      <label>Bike</label>
+      <select id="rideBike">
+        <option value="caledonia">Cervélo Caledonia-5 (Road)</option>
+        <option value="r3">Cervélo R3 (Road)</option>
+        <option value="cx">Open UP 700C (CX)</option>
+        <option value="gravel">Open UP 650B (Gravel)</option>
+        <option value="mtb">Ripley MTB</option>
+      </select>
     </div>
-    <div class="field">
-      <label>Wind MPH</label>
-      <input type="number" id="rideWind" placeholder="auto-filled" inputmode="numeric">
-    </div>
-  </div>
 
-  <div class="row">
-    <div class="field">
-      <label>AQI</label>
-      <input type="number" id="rideAqi" placeholder="auto-filled" inputmode="numeric">
-    </div>
-    <div class="field">
-      <label>Sunset</label>
-      <input type="time" id="rideSunset" value="18:30">
-    </div>
-  </div>
+    <hr class="divider">
+    <div class="section-label">Weather</div>
 
-  <hr class="divider">
-  <div class="section-label">Details</div>
+    <button class="btn-weather" id="fetchWeatherBtn">Fetch Weather for Ride Day</button>
+    <div class="weather-status" id="weatherStatus"></div>
 
-  <div class="field">
-    <label>Meeting someone? (optional)</label>
-    <input type="text" id="rideMeetup" placeholder="e.g. Coffee shop at 8:30 AM">
-  </div>
-
-  <div class="field">
-    <label>Need a lock? (urban ride with stops)</label>
-    <select id="rideLock">
-      <option value="no">No</option>
-      <option value="yes">Yes</option>
-    </select>
-  </div>
-
-  <button class="btn btn-primary" onclick="generateChecklist()">Generate Checklist</button>
-</div>
-
-<!-- CHECKLIST SCREEN -->
-<div id="checklistScreen" class="hidden">
-  <div id="weatherBanner"></div>
-  <div id="rideSummary"></div>
-  <div class="checklist" id="checklistContainer"></div>
-  <div class="footer-actions">
-    <button class="btn btn-secondary" onclick="resetAll()">New Ride</button>
-  </div>
-</div>
-
-<script>
-  // Set default date to tomorrow
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  document.getElementById('rideDate').value = tomorrow.toISOString().split('T')[0];
-
-  // Restore saved session (if any) — runs after DOM is ready
-  window.addEventListener('DOMContentLoaded', () => { loadState(); });
-  // Also try immediately in case DOMContentLoaded already fired
-  if (document.readyState !== 'loading') { loadState(); }
-
-  const BIKES = {
-    caledonia: { name:'Cervélo Caledonia-5', tire:'700C x 25', frontPsi:'55–60', rearPsi:'60–65' },
-    r3: { name:'Cervélo R3', tire:'700C x 23', frontPsi:'70', rearPsi:'70' },
-    cx: { name:'Open UP 700C (CX)', tire:'700C x 34', frontPsi:'25', rearPsi:'25' },
-    gravel: { name:'Open UP 650B (Gravel)', tire:'650B', frontPsi:'24', rearPsi:'25' },
-    mtb: { name:'Ripley MTB', tire:'29" x 2.4"', frontPsi:'22–24', rearPsi:'24–26' }
-  };
-
-  let checkState = {};
-  let weatherData = null;
-
-  // ── Persistence ─────────────────────────────────────────────────
-
-  const STORAGE_KEY = 'ridePrep_v1';
-
-  function saveState() {
-    try {
-      const state = {
-        screen: document.getElementById('checklistScreen').classList.contains('hidden') ? 'setup' : 'checklist',
-        checkState,
-        weatherData,
-        checklistHTML: document.getElementById('checklistContainer').innerHTML,
-        weatherBannerHTML: document.getElementById('weatherBanner').innerHTML,
-        rideSummaryHTML: document.getElementById('rideSummary').innerHTML,
-        headerTitle: document.getElementById('headerTitle').textContent,
-        headerSub: document.getElementById('headerSub').textContent,
-        form: {
-          rideDate: document.getElementById('rideDate').value,
-          rideTime: document.getElementById('rideTime').value,
-          rideMiles: document.getElementById('rideMiles').value,
-          rideLocation: document.getElementById('rideLocation').value,
-          rideBike: document.getElementById('rideBike').value,
-          rideTemp: document.getElementById('rideTemp').value,
-          rideWind: document.getElementById('rideWind').value,
-          rideAqi: document.getElementById('rideAqi').value,
-          rideSunset: document.getElementById('rideSunset').value,
-          rideMeetup: document.getElementById('rideMeetup').value,
-          rideLock: document.getElementById('rideLock').value,
-        },
-        savedAt: Date.now()
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) { /* storage full or unavailable — silently ignore */ }
-  }
-
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return false;
-      const state = JSON.parse(raw);
-
-      // Restore form values
-      if (state.form) {
-        Object.entries(state.form).forEach(([id, val]) => {
-          const el = document.getElementById(id);
-          if (el && val) el.value = val;
-        });
-      }
-
-      // If we were on the checklist screen, restore it
-      if (state.screen === 'checklist' && state.checklistHTML) {
-        checkState = state.checkState || {};
-        weatherData = state.weatherData || null;
-
-        document.getElementById('checklistContainer').innerHTML = state.checklistHTML;
-        document.getElementById('weatherBanner').innerHTML = state.weatherBannerHTML || '';
-        document.getElementById('rideSummary').innerHTML = state.rideSummaryHTML || '';
-        document.getElementById('headerTitle').textContent = state.headerTitle || 'Ride Prep';
-        document.getElementById('headerSub').textContent = state.headerSub || '';
-
-        // Re-apply checked states to DOM
-        document.querySelectorAll('.item').forEach(item => {
-          const key = item.dataset.key;
-          if (checkState[key]) {
-            item.classList.add('checked');
-          }
-        });
-
-        // Show checklist screen
-        document.getElementById('setupScreen').classList.add('hidden');
-        document.getElementById('checklistScreen').classList.remove('hidden');
-        document.getElementById('progressBar').classList.remove('hidden');
-        document.getElementById('progressText').classList.remove('hidden');
-        updateProgress();
-        return true;
-      }
-      return false;
-    } catch (e) { return false; }
-  }
-
-  function clearState() {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-  }
-
-  // ── Weather Fetching ──────────────────────────────────────────────
-
-  async function fetchWeather() {
-    const btn = document.getElementById('fetchWeatherBtn');
-    const status = document.getElementById('weatherStatus');
-    const preview = document.getElementById('weatherPreview');
-    const location = document.getElementById('rideLocation').value.trim();
-    const rideDate = document.getElementById('rideDate').value;
-    const rideTime = document.getElementById('rideTime').value;
-
-    if (!location) { showStatus('error', 'Enter a location first.'); return; }
-    if (!rideDate) { showStatus('error', 'Enter a ride date first.'); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Fetching…';
-    showStatus('loading', 'Looking up location…');
-
-    try {
-      // Step 1: Geocode location
-      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`;
-      const geoRes = await fetch(geoUrl);
-      const geoData = await geoRes.json();
-
-      if (!geoData.results || geoData.results.length === 0) {
-        throw new Error(`Could not find "${location}". Try a more specific city name.`);
-      }
-
-      const { latitude, longitude, timezone, name, admin1 } = geoData.results[0];
-      showStatus('loading', `Found ${name}${admin1 ? ', ' + admin1 : ''}. Fetching forecast…`);
-
-      // Step 2: Fetch weather forecast
-      const [startH] = rideTime.split(':').map(Number);
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}`
-        + `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation_probability`
-        + `&daily=sunset`
-        + `&temperature_unit=fahrenheit&wind_speed_unit=mph`
-        + `&timezone=${encodeURIComponent(timezone)}`
-        + `&start_date=${rideDate}&end_date=${rideDate}`;
-
-      const weatherRes = await fetch(weatherUrl);
-      const weather = await weatherRes.json();
-
-      if (!weather.hourly || !weather.hourly.time || weather.hourly.time.length === 0) {
-        throw new Error('No forecast data available for this date. Try a date within the next 7 days.');
-      }
-
-      // Find the hour closest to ride start
-      const targetHour = startH;
-      const hourIndex = Math.min(targetHour, weather.hourly.time.length - 1);
-
-      const tempF = Math.round(weather.hourly.temperature_2m[hourIndex]);
-      const windMph = Math.round(weather.hourly.wind_speed_10m[hourIndex]);
-      const humidity = Math.round(weather.hourly.relative_humidity_2m[hourIndex]);
-      const precipChance = weather.hourly.precipitation_probability[hourIndex];
-      const sunsetRaw = weather.daily.sunset[0]; // e.g. "2026-03-10T18:22"
-      const sunsetTime = sunsetRaw.split('T')[1]; // "18:22"
-
-      // Step 3: Fetch AQI
-      let aqi = null;
-      try {
-        const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}`
-          + `&hourly=us_aqi`
-          + `&timezone=${encodeURIComponent(timezone)}`
-          + `&start_date=${rideDate}&end_date=${rideDate}`;
-        const aqiRes = await fetch(aqiUrl);
-        const aqiData = await aqiRes.json();
-        if (aqiData.hourly && aqiData.hourly.us_aqi) {
-          aqi = aqiData.hourly.us_aqi[hourIndex];
-        }
-      } catch (e) {
-        // AQI is best-effort; continue without it
-      }
-
-      // Step 4: Fill in the form fields
-      document.getElementById('rideTemp').value = tempF;
-      document.getElementById('rideWind').value = windMph;
-      if (aqi !== null) document.getElementById('rideAqi').value = aqi;
-      document.getElementById('rideSunset').value = sunsetTime;
-
-      // Step 5: Show preview
-      document.getElementById('wpTemp').textContent = tempF + '°';
-      document.getElementById('wpWind').textContent = windMph;
-      document.getElementById('wpAqi').textContent = aqi !== null ? aqi : '—';
-      document.getElementById('wpHumidity').textContent = humidity + '%';
-      document.getElementById('wpSunset').textContent = formatTime(sunsetTime);
-      document.getElementById('wpPrecip').textContent = precipChance + '%';
-      preview.classList.add('visible');
-
-      weatherData = { tempF, windMph, aqi, humidity, precipChance, sunsetTime, locationName: `${name}${admin1 ? ', ' + admin1 : ''}` };
-
-      showStatus('success', `Weather loaded for ${name}${admin1 ? ', ' + admin1 : ''} on ${rideDate}. Fields auto-filled — adjust if needed.`);
-
-    } catch (err) {
-      showStatus('error', err.message || 'Failed to fetch weather. You can enter values manually.');
-      preview.classList.remove('visible');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Fetch Weather for Ride Day';
-    }
-  }
-
-  function showStatus(type, msg) {
-    const el = document.getElementById('weatherStatus');
-    el.className = 'weather-status ' + type;
-    el.textContent = msg;
-  }
-
-  // ── Clothing Logic ────────────────────────────────────────────────
-
-  function getClothingItems(temp) {
-    const items = [
-      { id:'jersey', text:'Jersey', detail:'' },
-      { id:'bibs', text: temp < 50 ? 'Classic winter tights' : temp < 55 ? 'Bib shorts + leg warmers' : 'Bib shorts', detail:'' },
-      { id:'socks', text:'Socks' + (temp < 55 ? ' + oversocks' : ''), detail: temp < 50 ? 'Pro Team socks + overshoes' : 'Pro Team socks' },
-      { id:'shoes', text:'Shoes', detail:'' },
-      { id:'handkerchief', text:'Handkerchief', detail:'' },
-      { id:'sunglasses', text:'Sunglasses', detail:'' },
-      { id:'helmet', text:'Helmet', detail:'' },
-      { id:'gloves', text: temp < 40 ? 'Winter gloves' : temp < 55 ? 'Long-fingered gloves' : 'Short-fingered gloves', detail:'' },
-      { id:'whoop', text:'WHOOP arm band', detail:'' },
-      { id:'bikebag', text:'Bike bag (credit card, ID, phone)', detail:'' },
-    ];
-
-    if (temp >= 70) {
-      items.unshift({ id:'baselayer', text:'Pro Team base layer', detail:'Lightweight mesh' });
-    }
-    if (temp >= 60 && temp < 65) {
-      items.unshift({ id:'baselayer', text:'Merino wool base layer', detail:'' });
-    }
-    if (temp >= 55 && temp < 60) {
-      items.unshift({ id:'baselayer', text:'Merino wool base layer', detail:'' });
-      items.push({ id:'longsleeve', text:'Long-sleeve jersey', detail:'' });
-    }
-    if (temp >= 65 && temp < 70) {
-      items.push({ id:'brevet', text:'Brevet jersey', detail:'Extra layer for cool mornings' });
-    }
-    if (temp >= 50 && temp < 55) {
-      items.unshift({ id:'baselayer', text:'Merino wool base layer', detail:'' });
-      items.push({ id:'windjacket', text:'Classic Wind jacket', detail:'' });
-    }
-    if (temp >= 40 && temp < 50) {
-      items.unshift({ id:'baselayer', text:'Merino wool base layer', detail:'' });
-      items.push({ id:'softshell', text:'Classic Softshell jacket', detail:'' });
-      items.push({ id:'woolhat', text:'Wool hat (optional — helps with ears)', detail:'' });
-    }
-    if (temp >= 30 && temp < 40) {
-      items.unshift({ id:'baselayer', text:'Merino wool base layer', detail:'' });
-      items.push({ id:'softshell', text:'Classic Softshell jacket', detail:'' });
-      items.push({ id:'woolhat', text:'Wool hat (must)', detail:'' });
-      items.push({ id:'scarf', text:'Cycling scarf', detail:'' });
-    }
-
-    return items;
-  }
-
-  // ── Checklist Generation ──────────────────────────────────────────
-
-  function generateChecklist() {
-    const miles = parseFloat(document.getElementById('rideMiles').value);
-    const temp = parseFloat(document.getElementById('rideTemp').value);
-    const wind = parseFloat(document.getElementById('rideWind').value);
-    const aqi = parseFloat(document.getElementById('rideAqi').value);
-    const bikeKey = document.getElementById('rideBike').value;
-    const meetup = document.getElementById('rideMeetup').value.trim();
-    const needLock = document.getElementById('rideLock').value === 'yes';
-    const rideDate = document.getElementById('rideDate').value;
-    const rideTime = document.getElementById('rideTime').value;
-    const location = document.getElementById('rideLocation').value;
-
-    if (!miles || !temp) { alert('Please enter miles and temperature (or fetch weather first).'); return; }
-
-    const bike = BIKES[bikeKey];
-    const rideDurationHrs = miles / 15;
-    const hours = Math.ceil(rideDurationHrs);
-    const waffles = hours;
-
-    // Sunset check
-    const sunsetStr = document.getElementById('rideSunset').value;
-    const [startH, startM] = rideTime.split(':').map(Number);
-    const [sunH, sunM] = sunsetStr.split(':').map(Number);
-    const startMinutes = startH * 60 + startM;
-    const sunsetMinutes = sunH * 60 + sunM;
-    const endMinutes = startMinutes + Math.round(rideDurationHrs * 60);
-    const ridingAfterDark = endMinutes > sunsetMinutes;
-    const extraBags = Math.max(0, hours - 2);
-
-    // Weather assessment
-    let weatherClass = 'perfect';
-    let weatherLabel = 'Perfect conditions';
-    if (temp < 50 || temp > 90 || aqi > 100 || wind > 15) {
-      weatherClass = 'warning'; weatherLabel = 'Conditions flagged — ride with caution';
-    } else if (temp < 60 || temp > 85 || aqi > 50 || wind > 10) {
-      weatherClass = 'tolerable'; weatherLabel = 'Tolerable conditions';
-    }
-    if (temp < 30) {
-      weatherClass = 'warning'; weatherLabel = 'Below 30°F — consider staying inside!';
-    }
-
-    // Extra weather details from API if available
-    const humidity = weatherData ? weatherData.humidity + '%' : '—';
-    const precipChance = weatherData ? weatherData.precipChance + '%' : '—';
-    const locationName = weatherData ? weatherData.locationName : location;
-
-    // Build weather banner
-    document.getElementById('weatherBanner').innerHTML = `
-      <div class="weather-banner">
-        <h3>Weather</h3>
-        <div class="weather-grid">
-          <div class="weather-stat"><div class="val">${temp}°F</div><div class="label">Temperature</div></div>
-          <div class="weather-stat"><div class="val">${wind || '—'} MPH</div><div class="label">Wind</div></div>
-          <div class="weather-stat"><div class="val">${aqi || '—'}</div><div class="label">AQI</div></div>
-          <div class="weather-stat"><div class="val">${humidity}</div><div class="label">Humidity</div></div>
-          <div class="weather-stat"><div class="val">${precipChance}</div><div class="label">Rain chance</div></div>
-          <div class="weather-stat"><div class="val">${sunsetStr ? formatTime(sunsetStr) : '—'}</div><div class="label">Sunset</div></div>
+    <div class="weather-preview" id="weatherPreview">
+      <div class="wp-grid">
+        <div class="wp-item">
+          <div class="wp-val" id="wpTemp">--</div>
+          <div class="wp-label">Temp °F</div>
         </div>
-        <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">${locationName}</div>
-        <div class="weather-tag ${weatherClass}">${weatherLabel}</div>
+        <div class="wp-item">
+          <div class="wp-val" id="wpWind">--</div>
+          <div class="wp-label">Wind MPH</div>
+        </div>
+        <div class="wp-item">
+          <div class="wp-val" id="wpAqi">--</div>
+          <div class="wp-label">AQI</div>
+        </div>
       </div>
-    `;
-
-    // Build ride summary
-    const dateStr = new Date(rideDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
-    document.getElementById('rideSummary').innerHTML = `
-      <div class="ride-summary">
-        <h3>Ride Summary</h3>
-        <p>
-          <span class="detail">${dateStr} at ${formatTime(rideTime)}</span><br>
-          <span class="detail">${miles} miles</span> on the <span class="detail">${bike.name}</span><br>
-          Est. duration: <span class="detail">~${hours} hour${hours>1?'s':''}</span>
-          ${meetup ? '<br>Meeting: <span class="detail">'+meetup+'</span>' : ''}
-          ${ridingAfterDark ? '<br><span style="color:var(--yellow);">Sunset at '+formatTime(sunsetStr)+' — you may be riding in the dark. Ensure lights are charged and mounted.</span>' : ''}
-        </p>
+      <div class="wp-row2">
+        <div class="wp-item">
+          <div class="wp-val" id="wpHumidity">--</div>
+          <div class="wp-label">Humidity %</div>
+        </div>
+        <div class="wp-item">
+          <div class="wp-val" id="wpSunset">--</div>
+          <div class="wp-label">Sunset</div>
+        </div>
       </div>
-    `;
+      <div style="margin-top:8px;text-align:center;">
+        <div class="wp-item">
+          <div class="wp-val" id="wpPrecip">--</div>
+          <div class="wp-label">Rain chance</div>
+        </div>
+      </div>
+    </div>
 
-    // Build sections
-    const sections = [];
+    <div class="row">
+      <div class="field">
+        <label>Temperature °F</label>
+        <input type="number" id="rideTemp" placeholder="auto-filled" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Wind MPH</label>
+        <input type="number" id="rideWind" placeholder="auto-filled" inputmode="numeric">
+      </div>
+    </div>
 
-    // Night-before bike prep
-    const bikeItems = [
-      { id:'wahoo', text:'Charge Wahoo ROAM 3', detail:'Bike computer' },
-      { id:'lights', text:'Charge Garmin lights', detail:'' },
-      { id:'chain', text:'Check chain — needs wax?', detail:'' },
-      { id:'tires', text:`Pump tires — Front: ${bike.frontPsi} PSI / Rear: ${bike.rearPsi} PSI`, detail:`${bike.tire}` },
-      { id:'route', text:'Load route on Wahoo', detail:'' },
-    ];
-    if (needLock) bikeItems.push({ id:'lock', text:'Pack bike lock', detail:'Urban ride with stops' });
-    if (ridingAfterDark) bikeItems.push({ id:'extralights', text:'Mount front & rear Garmin lights on bike', detail:'Ride may extend past sunset ('+formatTime(sunsetStr)+')' });
-    sections.push({ title:'Bike Prep (Night Before)', emoji:'🔧', items:bikeItems });
+    <div class="row">
+      <div class="field">
+        <label>AQI</label>
+        <input type="number" id="rideAqi" placeholder="auto-filled" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Sunset</label>
+        <input type="time" id="rideSunset" value="18:30">
+      </div>
+    </div>
 
-    // Clothing
-    const clothingItems = getClothingItems(temp);
-    sections.push({ title:'Clothing', emoji:'👕', items:clothingItems });
+    <hr class="divider">
+    <div class="section-label">Details</div>
 
-    // Food
-    const foodItems = [
-      { id:'preride', text:'Pre-ride meal', detail:'Oatmeal + berries or cereal + fruit — eat 1–2 hrs before' },
-      { id:'waffles', text:`Pack ${waffles} Honey Stinger Waffle${waffles>1?'s':''}`, detail:`${waffles} waffle${waffles>1?'s':''} for ~${hours} hr ride` },
-      { id:'bottles', text:'Fill 2 bottles with Skratch mix', detail:'' },
-    ];
-    if (extraBags > 0) {
-      foodItems.push({ id:'bags', text:`Pack ${extraBags} Ziploc bag${extraBags>1?'s':''} of Skratch mix`, detail:'For refills on the road' });
-    }
-    foodItems.push({ id:'recovery', text:'Prep Skratch Chocolate Recovery Shake', detail:'Have it ready in the fridge for post-ride' });
-    sections.push({ title:'Food & Hydration', emoji:'🍯', items:foodItems });
+    <div class="field">
+      <label>Meeting someone? (optional)</label>
+      <input type="text" id="rideMeetup" placeholder="e.g. Coffee shop at 8:30 AM">
+    </div>
 
-    // Group ride
-    if (meetup) {
-      sections.push({ title:'Meetup', emoji:'👥', items:[
-        { id:'meetup', text:meetup, detail:'Confirm with your group' },
-        { id:'traveltime', text:'Account for travel time to start', detail:'Work backwards from meeting time' },
-      ]});
-    }
+    <div class="field">
+      <label>Need a lock? (urban ride with stops)</label>
+      <select id="rideLock">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
 
-    // Render
-    checkState = {};
-    let html = '';
-    sections.forEach((sec, si) => {
-      const sectionId = 'sec_' + si;
-      let itemsHtml = '';
-      sec.items.forEach((item, ii) => {
-        const key = sectionId + '_' + item.id + '_' + ii;
-        checkState[key] = false;
-        itemsHtml += `
-          <div class="item" data-key="${key}" onclick="toggleItem(this)">
-            <div class="checkbox"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            <div><div class="item-text">${item.text}</div>${item.detail ? '<div class="item-detail">'+item.detail+'</div>' : ''}</div>
-          </div>`;
-      });
-      html += `
-        <div class="section" id="${sectionId}">
-          <div class="section-header" onclick="toggleSection('${sectionId}')">
-            <h3>${sec.emoji} ${sec.title} <span class="section-badge" id="${sectionId}_badge">0/${sec.items.length}</span></h3>
-            <span class="section-chevron">▼</span>
-          </div>
-          <div class="section-items">${itemsHtml}</div>
-        </div>`;
-    });
+    <button class="btn btn-primary" id="generateBtn">Generate Checklist</button>
+  </div>
 
-    document.getElementById('checklistContainer').innerHTML = html;
-    document.getElementById('setupScreen').classList.add('hidden');
-    document.getElementById('checklistScreen').classList.remove('hidden');
-    document.getElementById('progressBar').classList.remove('hidden');
-    document.getElementById('progressText').classList.remove('hidden');
-    document.getElementById('headerTitle').textContent = `${miles}mi Ride Prep`;
-    document.getElementById('headerSub').textContent = `${bike.name} — ${dateStr}`;
-    updateProgress();
-    saveState();
-  }
+  <!-- CHECKLIST SCREEN -->
+  <div id="checklistScreen" class="hidden">
+    <div id="weatherBanner"></div>
+    <div id="rideSummary"></div>
+    <div class="checklist" id="checklistContainer"></div>
+    <div class="footer-actions">
+      <button class="btn btn-secondary" id="resetBtn">New Ride</button>
+    </div>
+  </div>
 
-  function toggleItem(el) {
-    const key = el.dataset.key;
-    checkState[key] = !checkState[key];
-    el.classList.toggle('checked', checkState[key]);
-    updateProgress();
-    saveState();
-  }
-
-  function toggleSection(id) {
-    document.getElementById(id).classList.toggle('collapsed');
-  }
-
-  function updateProgress() {
-    const total = Object.keys(checkState).length;
-    const done = Object.values(checkState).filter(Boolean).length;
-    const pct = total > 0 ? (done / total * 100) : 0;
-    document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressText').textContent = `${done}/${total} items — ${Math.round(pct)}%`;
-
-    document.querySelectorAll('.section').forEach(sec => {
-      const items = sec.querySelectorAll('.item');
-      const checked = sec.querySelectorAll('.item.checked');
-      const badge = sec.querySelector('.section-badge');
-      if (badge) {
-        badge.textContent = `${checked.length}/${items.length}`;
-        badge.classList.toggle('done', checked.length === items.length);
-      }
-    });
-  }
-
-  function formatTime(t) {
-    const [h, m] = t.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
-  }
-
-  function resetAll() {
-    if (confirm('Start a new ride prep?')) {
-      clearState();
-      checkState = {};
-      weatherData = null;
-      document.getElementById('setupScreen').classList.remove('hidden');
-      document.getElementById('checklistScreen').classList.add('hidden');
-      document.getElementById('progressBar').classList.add('hidden');
-      document.getElementById('progressText').classList.add('hidden');
-      document.getElementById('headerTitle').textContent = 'Ride Prep';
-      document.getElementById('headerSub').textContent = 'Get ready for tomorrow\'s ride';
-      document.getElementById('rideMiles').value = '';
-      document.getElementById('rideTemp').value = '';
-      document.getElementById('rideWind').value = '';
-      document.getElementById('rideAqi').value = '';
-      document.getElementById('rideMeetup').value = '';
-      document.getElementById('rideLock').value = 'no';
-      document.getElementById('rideSunset').value = '18:30';
-      document.getElementById('weatherStatus').className = 'weather-status';
-      document.getElementById('weatherPreview').classList.remove('visible');
-      document.getElementById('checklistContainer').innerHTML = '';
-      document.getElementById('weatherBanner').innerHTML = '';
-      document.getElementById('rideSummary').innerHTML = '';
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      document.getElementById('rideDate').value = tomorrow.toISOString().split('T')[0];
-    }
-  }
-</script>
+  <script src="app.js"></script>
 </body>
+
 </html>
