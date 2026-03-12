@@ -72,21 +72,21 @@
       <div class="wp-grid">
         <div class="wp-item">
           <div class="wp-val" id="wpTemp">--</div>
-          <div class="wp-label">Temp °F</div>
+          <div class="wp-label">Temp range °F</div>
         </div>
         <div class="wp-item">
           <div class="wp-val" id="wpWind">--</div>
-          <div class="wp-label">Wind MPH</div>
+          <div class="wp-label">Max wind MPH</div>
         </div>
         <div class="wp-item">
           <div class="wp-val" id="wpAqi">--</div>
-          <div class="wp-label">AQI</div>
+          <div class="wp-label">Max AQI</div>
         </div>
       </div>
       <div class="wp-row2">
         <div class="wp-item">
           <div class="wp-val" id="wpHumidity">--</div>
-          <div class="wp-label">Humidity %</div>
+          <div class="wp-label">Max humidity</div>
         </div>
         <div class="wp-item">
           <div class="wp-val" id="wpSunset">--</div>
@@ -96,27 +96,34 @@
       <div style="margin-top:8px;text-align:center;">
         <div class="wp-item">
           <div class="wp-val" id="wpPrecip">--</div>
-          <div class="wp-label">Rain chance</div>
+          <div class="wp-label">Max rain chance</div>
         </div>
       </div>
     </div>
 
     <div class="row">
       <div class="field">
-        <label>Temperature °F</label>
-        <input type="number" id="rideTemp" placeholder="auto-filled" inputmode="numeric">
+        <label>Low °F</label>
+        <input type="number" id="rideTempLow" placeholder="auto-filled" inputmode="numeric">
       </div>
       <div class="field">
-        <label>Wind MPH</label>
-        <input type="number" id="rideWind" placeholder="auto-filled" inputmode="numeric">
+        <label>High °F</label>
+        <input type="number" id="rideTempHigh" placeholder="auto-filled" inputmode="numeric">
       </div>
     </div>
 
     <div class="row">
       <div class="field">
-        <label>AQI</label>
+        <label>Max Wind MPH</label>
+        <input type="number" id="rideWind" placeholder="auto-filled" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Max AQI</label>
         <input type="number" id="rideAqi" placeholder="auto-filled" inputmode="numeric">
       </div>
+    </div>
+
+    <div class="row">
       <div class="field">
         <label>Sunset</label>
         <input type="time" id="rideSunset" value="18:30">
