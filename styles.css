@@ -1,19 +1,19 @@
 :root {
-  --bg: #0d1117;
-  --surface: #161b22;
-  --surface-hover: #1c2129;
-  --border: #30363d;
-  --text: #e6edf3;
-  --text-muted: #8b949e;
-  --accent: #f0883e;
-  --accent-dim: rgba(240, 136, 62, 0.15);
-  --green: #3fb950;
-  --green-dim: rgba(63, 185, 80, 0.15);
-  --yellow: #d29922;
-  --yellow-dim: rgba(210, 153, 34, 0.15);
-  --red: #f85149;
-  --red-dim: rgba(248, 81, 73, 0.15);
-  --blue: #58a6ff;
+  --bg: #121518;
+  --surface: #1a1f25;
+  --surface-hover: #222830;
+  --border: #2a3040;
+  --text: #e2e8f0;
+  --text-muted: #7a8696;
+  --accent: #6d9fff;
+  --accent-dim: rgba(109, 159, 255, 0.12);
+  --green: #34d399;
+  --green-dim: rgba(52, 211, 153, 0.12);
+  --yellow: #fbbf24;
+  --yellow-dim: rgba(251, 191, 36, 0.12);
+  --red: #f87171;
+  --red-dim: rgba(248, 113, 113, 0.12);
+  --blue: #6d9fff;
   --radius: 12px;
 }
 
@@ -37,7 +37,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(13, 17, 23, 0.85);
+  background: rgba(18, 21, 24, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -46,12 +46,12 @@ body {
 }
 
 .header h1 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .header-sub {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -84,7 +84,7 @@ body {
 }
 
 .setup h2 {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
   margin-bottom: 12px;
 }
@@ -95,7 +95,7 @@ body {
 
 .field label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
   margin-bottom: 5px;
   font-weight: 500;
@@ -115,7 +115,7 @@ body {
 }
 
 .field select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a8696' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 32px;
@@ -189,7 +189,7 @@ body {
 }
 
 .weather-status {
-  font-size: 13px;
+  font-size: 12px;
   padding: 10px 14px;
   border-radius: 8px;
   margin-bottom: 14px;
@@ -238,7 +238,7 @@ body {
 }
 
 .weather-preview .wp-val {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -397,7 +397,7 @@ body {
 }
 
 .weather-stat .val {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -416,21 +416,21 @@ body {
 }
 
 .weather-tag.perfect {
-  background: rgba(63, 185, 80, 0.1);
+  background: rgba(52, 211, 153, 0.1);
   color: var(--green);
-  border: 1px solid rgba(63, 185, 80, 0.25);
+  border: 1px solid rgba(52, 211, 153, 0.25);
 }
 
 .weather-tag.tolerable {
-  background: rgba(210, 153, 34, 0.1);
+  background: rgba(251, 191, 36, 0.1);
   color: var(--yellow);
-  border: 1px solid rgba(210, 153, 34, 0.25);
+  border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
 .weather-tag.warning {
-  background: rgba(248, 81, 73, 0.1);
+  background: rgba(248, 113, 113, 0.1);
   color: var(--red);
-  border: 1px solid rgba(248, 81, 73, 0.25);
+  border: 1px solid rgba(248, 113, 113, 0.25);
 }
 
 .val.metric-tolerable {
@@ -446,17 +446,17 @@ body {
   padding: 14px 16px;
   border-radius: var(--radius);
   background: var(--accent-dim);
-  border: 1px solid rgba(240, 136, 62, 0.25);
+  border: 1px solid rgba(109, 159, 255, 0.25);
 }
 
 .ride-summary h3 {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--accent);
   margin-bottom: 6px;
 }
 
 .ride-summary p {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
   line-height: 1.5;
 }
