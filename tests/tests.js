@@ -214,14 +214,14 @@ test('30-39F: softshell + wool hat + scarf', () => {
   assert(findItem(items, 'scarf'), 'should include scarf');
 });
 
-test('below 50F: socks include overshoes', () => {
+test('below 50F: shoes include overshoes', () => {
   const items = getClothingItems(45);
-  assert(findItem(items, 'socks').text.includes('overshoes'), 'should mention overshoes');
+  assert(findItem(items, 'shoes').text.includes('overshoes'), 'should mention overshoes');
 });
 
-test('below 60F: socks detail includes oversocks', () => {
+test('50-59F: shoes include oversocks', () => {
   const items = getClothingItems(55);
-  assert(findItem(items, 'socks').detail.includes('oversocks'), 'should mention oversocks');
+  assert(findItem(items, 'shoes').text.includes('oversocks'), 'should mention oversocks');
 });
 
 test('60F+: long-fingered gloves at 59, short-fingered at 60', () => {

@@ -1,9 +1,7 @@
 // ── Pure utility functions (testable without DOM) ───────────────
 
 function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function formatTime(t) {
@@ -52,8 +50,8 @@ const CLOTHING_RULES = [
 function getClothingItems(temp) {
   const items = [
     { id: 'bibs', text: temp < 50 ? 'Classic winter tights' : temp < 60 ? 'Bib shorts + leg warmers' : 'Bib shorts' },
-    { id: 'socks', text: 'Pro Team Socks' + (temp < 50 ? ' + overshoes' : ''), detail: temp < 60 ? ' + oversocks' : '' },
-    { id: 'shoes', text: 'Shoes' },
+    { id: 'socks', text: 'Pro Team Socks' },
+    { id: 'shoes', text: 'Shoes' + (temp < 50 ? ' + overshoes' : temp < 60 ? ' + oversocks' : '') },
     { id: 'handkerchief', text: 'Handkerchief' },
     { id: 'sunglasses', text: 'Sunglasses' },
     { id: 'helmet', text: 'Helmet' },
@@ -503,4 +501,9 @@ if (typeof document !== 'undefined') {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
   }
+}
+
+// ── Node.js exports for testing ──────────────────────────────────
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { esc, formatTime, assessWeather, isRidingAfterDark, getClothingItems };
 }
