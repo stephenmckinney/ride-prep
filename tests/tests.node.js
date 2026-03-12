@@ -6,6 +6,8 @@ const {
   assessWeather,
   assessMetric,
   isRidingAfterDark,
+  getRideEndHour,
+  extractWeatherRange,
   getClothingItems,
   getAccessoryItems,
 } = require('../app.js');
@@ -353,4 +355,92 @@ test('getClothingItems: below 30F returns base items with no CLOTHING_RULES matc
     undefined,
     'no base layer rule matches below 30',
   );
+});
+
+// ── getRideEndHour ──────────────────────────────────────────────
+
+test('getRideEndHour: 60mi ride at 9am ends at hour 13', () => {
+  // 60 miles / 15 mph = 4 hours → 9 + 4 = 13
+  assert.equal(getRideEndHour(9, 60), 13);
+});
+
+test('getRideEndHour: 30mi ride at 9am ends at hour 11', () => {
+  // 30 miles / 15 mph = 2 hours → 9 + 2 = 11
+  assert.equal(getRideEndHour(9, 30), 11);
+});
+
+test('getRideEndHour: caps at hour 23', () => {
+  assert.equal(getRideEndHour(20, 120), 23);
+});
+
+test('getRideEndHour: short ride same hour', () => {
+  // 10 miles / 15 mph = 0.67 hours → ceil(9.67) = 10
+  assert.equal(getRideEndHour(9, 10), 10);
+});
+
+// ── extractWeatherRange ─────────────────────────────────────────
+
+test('extractWeatherRange: computes min/max across ride window', () => {
+  // Simulate hourly data for hours 0-23
+  const temps = [
+    30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 55, 62, 65, 63, 60, 58, 55, 52, 50,
+    48, 46, 44, 42, 40,
+  ];
+  const winds = [
+    5, 5, 4, 4, 3, 3, 5, 6, 8, 10, 12, 14, 16, 15, 13, 11, 9, 8, 7, 6, 5, 5, 4,
+    4,
+  ];
+  const humidity = [
+    80, 82, 84, 85, 86, 85, 83, 80, 75, 70, 65, 60, 55, 50, 48, 50, 55, 60, 65,
+    70, 75, 78, 80, 82,
+  ];
+  const precip = [
+    0, 0, 0, 0, 0, 0, 0, 0, 10, 20, 30, 40, 50, 45, 35, 25, 15, 10, 5, 0, 0, 0,
+    0, 0,
+  ];
+
+  // Ride from 9am to 1pm (hours 9-13)
+  const range = extractWeatherRange(temps, winds, humidity, precip, 9, 13);
+  assert.equal(range.tempLow, 48, 'lowest temp in range is 48');
+  assert.equal(range.tempHigh, 65, 'highest temp in range is 65');
+  assert.equal(range.windMax, 16, 'max wind in range is 16');
+  assert.equal(range.humidityMax, 70, 'max humidity in range is 70');
+  assert.equal(range.precipMax, 50, 'max precip in range is 50');
+});
+
+test('extractWeatherRange: single hour returns that hour values', () => {
+  const temps = [40, 50, 60, 70, 80];
+  const winds = [5, 10, 15, 20, 25];
+  const humidity = [50, 55, 60, 65, 70];
+  const precip = [0, 10, 20, 30, 40];
+
+  const range = extractWeatherRange(temps, winds, humidity, precip, 2, 2);
+  assert.equal(range.tempLow, 60);
+  assert.equal(range.tempHigh, 60);
+  assert.equal(range.windMax, 15);
+  assert.equal(range.humidityMax, 60);
+  assert.equal(range.precipMax, 20);
+});
+
+test('extractWeatherRange: clamps start index to 0', () => {
+  const temps = [40, 50, 60];
+  const winds = [5, 10, 15];
+  const humidity = [50, 55, 60];
+  const precip = [0, 10, 20];
+
+  const range = extractWeatherRange(temps, winds, humidity, precip, -1, 1);
+  assert.equal(range.tempLow, 40);
+  assert.equal(range.tempHigh, 50);
+});
+
+test('extractWeatherRange: clamps end index to array length', () => {
+  const temps = [40, 50, 60];
+  const winds = [5, 10, 15];
+  const humidity = [50, 55, 60];
+  const precip = [0, 10, 20];
+
+  const range = extractWeatherRange(temps, winds, humidity, precip, 1, 99);
+  assert.equal(range.tempLow, 50);
+  assert.equal(range.tempHigh, 60);
+  assert.equal(range.windMax, 15);
 });

@@ -71,6 +71,46 @@ function isRidingAfterDark(rideTime, rideDurationHrs, sunsetStr) {
   return endMinutes > sunsetMinutes;
 }
 
+function getRideEndHour(startHour, miles) {
+  const durationHrs = miles / AVG_SPEED_MPH;
+  return Math.min(Math.ceil(startHour + durationHrs), 23);
+}
+
+function extractWeatherRange(
+  hourlyTemps,
+  hourlyWind,
+  hourlyHumidity,
+  hourlyPrecip,
+  startIndex,
+  endIndex,
+) {
+  const start = Math.max(0, startIndex);
+  const end = Math.min(endIndex, hourlyTemps.length - 1);
+
+  let tempLow = Number.POSITIVE_INFINITY;
+  let tempHigh = Number.NEGATIVE_INFINITY;
+  let windMax = 0;
+  let humidityMax = 0;
+  let precipMax = 0;
+
+  for (let i = start; i <= end; i++) {
+    const t = hourlyTemps[i];
+    if (t < tempLow) tempLow = t;
+    if (t > tempHigh) tempHigh = t;
+    if (hourlyWind[i] > windMax) windMax = hourlyWind[i];
+    if (hourlyHumidity[i] > humidityMax) humidityMax = hourlyHumidity[i];
+    if (hourlyPrecip[i] > precipMax) precipMax = hourlyPrecip[i];
+  }
+
+  return {
+    tempLow: Math.round(tempLow),
+    tempHigh: Math.round(tempHigh),
+    windMax: Math.round(windMax),
+    humidityMax: Math.round(humidityMax),
+    precipMax,
+  };
+}
+
 // ── Constants ───────────────────────────────────────────────────
 
 const COLD_THRESHOLD = 50; // Below: winter tights, overshoes, winter gloves
@@ -250,7 +290,7 @@ async function geocodeLocation(name) {
   return { latitude, longitude, timezone, cityName, admin1 };
 }
 
-async function fetchForecast(lat, lon, tz, date, hourIndex) {
+async function fetchForecast(lat, lon, tz, date, startHourIndex, endHourIndex) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation_probability&daily=sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=${encodeURIComponent(tz)}&start_date=${date}&end_date=${date}`;
 
   const res = await fetch(url);
@@ -262,23 +302,34 @@ async function fetchForecast(lat, lon, tz, date, hourIndex) {
     );
   }
 
-  const i = Math.min(hourIndex, data.hourly.time.length - 1);
+  const range = extractWeatherRange(
+    data.hourly.temperature_2m,
+    data.hourly.wind_speed_10m,
+    data.hourly.relative_humidity_2m,
+    data.hourly.precipitation_probability,
+    startHourIndex,
+    endHourIndex,
+  );
+
   return {
-    tempF: Math.round(data.hourly.temperature_2m[i]),
-    windMph: Math.round(data.hourly.wind_speed_10m[i]),
-    humidity: Math.round(data.hourly.relative_humidity_2m[i]),
-    precipChance: data.hourly.precipitation_probability[i],
+    ...range,
     sunsetTime: data.daily.sunset[0].split('T')[1],
   };
 }
 
-async function fetchAqi(lat, lon, tz, date, hourIndex) {
+async function fetchAqi(lat, lon, tz, date, startHourIndex, endHourIndex) {
   try {
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=us_aqi&timezone=${encodeURIComponent(tz)}&start_date=${date}&end_date=${date}`;
     const res = await fetch(url);
     const data = await res.json();
     if (data.hourly?.us_aqi) {
-      return data.hourly.us_aqi[hourIndex];
+      const start = Math.max(0, startHourIndex);
+      const end = Math.min(endHourIndex, data.hourly.us_aqi.length - 1);
+      let max = 0;
+      for (let i = start; i <= end; i++) {
+        if (data.hourly.us_aqi[i] > max) max = data.hourly.us_aqi[i];
+      }
+      return max;
     }
   } catch (e) {
     /* best-effort */
@@ -314,7 +365,8 @@ void (() => {
       rideMiles: $('rideMiles'),
       rideLocation: $('rideLocation'),
       rideBike: $('rideBike'),
-      rideTemp: $('rideTemp'),
+      rideTempLow: $('rideTempLow'),
+      rideTempHigh: $('rideTempHigh'),
       rideWind: $('rideWind'),
       rideAqi: $('rideAqi'),
       rideSunset: $('rideSunset'),
@@ -362,14 +414,15 @@ void (() => {
 
     // ── Persistence ───────────────────────────────────────────────
 
-    const STORAGE_KEY = 'ridePrep_v2';
+    const STORAGE_KEY = 'ridePrep_v3';
     const FORM_FIELDS = [
       'rideDate',
       'rideTime',
       'rideMiles',
       'rideLocation',
       'rideBike',
-      'rideTemp',
+      'rideTempLow',
+      'rideTempHigh',
       'rideWind',
       'rideAqi',
       'rideSunset',
@@ -439,12 +492,15 @@ void (() => {
     // ── Weather UI ────────────────────────────────────────────────
 
     function displayWeatherPreview(data) {
-      els.wpTemp.textContent = `${data.tempF}\u00B0`;
-      els.wpWind.textContent = data.windMph;
+      els.wpTemp.textContent =
+        data.tempLow === data.tempHigh
+          ? `${data.tempLow}\u00B0`
+          : `${data.tempLow}\u00B0\u2013${data.tempHigh}\u00B0`;
+      els.wpWind.textContent = data.windMax;
       els.wpAqi.textContent = data.aqi !== null ? data.aqi : '\u2014';
-      els.wpHumidity.textContent = `${data.humidity}%`;
+      els.wpHumidity.textContent = `${data.humidityMax}%`;
       els.wpSunset.textContent = formatTime(data.sunsetTime);
-      els.wpPrecip.textContent = `${data.precipChance}%`;
+      els.wpPrecip.textContent = `${data.precipMax}%`;
       els.weatherPreview.classList.add('visible');
     }
 
@@ -472,12 +528,19 @@ void (() => {
         showStatus('loading', `Found ${label}. Fetching forecast\u2026`);
 
         const [startH] = rideTime.split(':').map(Number);
+        const miles = Number.parseFloat(els.rideMiles.value);
+        const endH =
+          Number.isFinite(miles) && miles > 0
+            ? getRideEndHour(startH, miles)
+            : startH;
+
         const forecast = await fetchForecast(
           geo.latitude,
           geo.longitude,
           geo.timezone,
           rideDate,
           startH,
+          endH,
         );
         const aqi = await fetchAqi(
           geo.latitude,
@@ -485,10 +548,12 @@ void (() => {
           geo.timezone,
           rideDate,
           startH,
+          endH,
         );
 
-        els.rideTemp.value = forecast.tempF;
-        els.rideWind.value = forecast.windMph;
+        els.rideTempLow.value = forecast.tempLow;
+        els.rideTempHigh.value = forecast.tempHigh;
+        els.rideWind.value = forecast.windMax;
         if (aqi !== null) els.rideAqi.value = aqi;
         els.rideSunset.value = forecast.sunsetTime;
 
@@ -526,7 +591,8 @@ void (() => {
 
     function generateChecklist(isRestore) {
       const miles = Number.parseFloat(els.rideMiles.value);
-      const temp = Number.parseFloat(els.rideTemp.value);
+      const tempLow = Number.parseFloat(els.rideTempLow.value);
+      const tempHigh = Number.parseFloat(els.rideTempHigh.value);
       const wind = Number.parseFloat(els.rideWind.value);
       const aqi = Number.parseFloat(els.rideAqi.value);
       const bikeKey = els.rideBike.value;
@@ -536,10 +602,14 @@ void (() => {
       const rideTime = els.rideTime.value;
       const location = els.rideLocation.value;
 
-      if (!Number.isFinite(miles) || miles <= 0 || !Number.isFinite(temp)) {
+      if (!Number.isFinite(miles) || miles <= 0 || !Number.isFinite(tempLow)) {
         alert('Please enter miles and temperature (or fetch weather first).');
         return;
       }
+
+      // Use the high temp if provided, otherwise fall back to low
+      const effectiveHigh = Number.isFinite(tempHigh) ? tempHigh : tempLow;
+      const hasRange = effectiveHigh !== tempLow;
 
       const bike = BIKES[bikeKey];
       const rideDurationHrs = miles / AVG_SPEED_MPH;
@@ -554,27 +624,38 @@ void (() => {
       );
       const extraBags = Math.max(0, hours - 2);
 
-      const weather = assessWeather(temp, wind, aqi);
+      // Assess using worst-case: lowest temp, highest wind/AQI
+      const weather = assessWeather(tempLow, wind, aqi);
 
-      const humidity = weatherData ? `${weatherData.humidity}%` : '\u2014';
-      const precipChance = weatherData
-        ? `${weatherData.precipChance}%`
-        : '\u2014';
+      const humidity = weatherData ? `${weatherData.humidityMax}%` : '\u2014';
+      const precipChance = weatherData ? `${weatherData.precipMax}%` : '\u2014';
       const locationName = weatherData ? weatherData.locationName : location;
 
-      const tempCls = assessMetric('temp', temp);
+      const tempLowCls = assessMetric('temp', tempLow);
+      const tempHighCls = assessMetric('temp', effectiveHigh);
+      // Use the worse of the two temp assessments for the range display
+      const tempCls =
+        tempLowCls === 'warning' || tempHighCls === 'warning'
+          ? 'warning'
+          : tempLowCls === 'tolerable' || tempHighCls === 'tolerable'
+            ? 'tolerable'
+            : 'perfect';
       const windCls = assessMetric('wind', wind);
       const aqiCls = assessMetric('aqi', aqi);
+
+      const tempDisplay = hasRange
+        ? `${esc(String(tempLow))}\u2013${esc(String(effectiveHigh))}\u00B0F`
+        : `${esc(String(tempLow))}\u00B0F`;
 
       els.weatherBanner.innerHTML = `
     <div class="weather-banner">
       <div class="weather-tag ${weather.cls}">${esc(weather.label)}</div>
       <div class="weather-grid">
-        <div class="weather-stat"><div class="val metric-${tempCls}">${esc(String(temp))}\u00B0F</div><div class="label">Temperature</div></div>
-        <div class="weather-stat"><div class="val metric-${windCls}">${Number.isFinite(wind) ? `${esc(String(wind))} MPH` : '\u2014'}</div><div class="label">Wind</div></div>
-        <div class="weather-stat"><div class="val metric-${aqiCls}">${Number.isFinite(aqi) ? esc(String(aqi)) : '\u2014'}</div><div class="label">AQI</div></div>
-        <div class="weather-stat"><div class="val">${esc(humidity)}</div><div class="label">Humidity</div></div>
-        <div class="weather-stat"><div class="val">${esc(precipChance)}</div><div class="label">Rain chance</div></div>
+        <div class="weather-stat"><div class="val metric-${tempCls}">${tempDisplay}</div><div class="label">Temp range</div></div>
+        <div class="weather-stat"><div class="val metric-${windCls}">${Number.isFinite(wind) ? `${esc(String(wind))} MPH` : '\u2014'}</div><div class="label">Max wind</div></div>
+        <div class="weather-stat"><div class="val metric-${aqiCls}">${Number.isFinite(aqi) ? esc(String(aqi)) : '\u2014'}</div><div class="label">Max AQI</div></div>
+        <div class="weather-stat"><div class="val">${esc(humidity)}</div><div class="label">Max humidity</div></div>
+        <div class="weather-stat"><div class="val">${esc(precipChance)}</div><div class="label">Max rain chance</div></div>
         <div class="weather-stat"><div class="val">${sunsetStr ? esc(formatTime(sunsetStr)) : '\u2014'}</div><div class="label">Sunset</div></div>
       </div>
       <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">${esc(locationName)}</div>
@@ -632,7 +713,7 @@ void (() => {
         items: bikeItems,
       });
 
-      const clothingItems = getClothingItems(temp);
+      const clothingItems = getClothingItems(tempLow);
       sections.push({
         title: 'Clothing',
         emoji: '\uD83D\uDC55',
@@ -776,7 +857,8 @@ void (() => {
         els.headerTitle.textContent = 'Ride Prep';
         els.headerSub.textContent = "Get ready for tomorrow's ride";
         els.rideMiles.value = '';
-        els.rideTemp.value = '';
+        els.rideTempLow.value = '';
+        els.rideTempHigh.value = '';
         els.rideWind.value = '';
         els.rideAqi.value = '';
         els.rideMeetup.value = '';
@@ -808,6 +890,8 @@ if (typeof module !== 'undefined' && module.exports) {
     assessWeather,
     assessMetric,
     isRidingAfterDark,
+    getRideEndHour,
+    extractWeatherRange,
     getClothingItems,
     getAccessoryItems,
     COLD_THRESHOLD,
