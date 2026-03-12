@@ -632,6 +632,16 @@ void (() => {
         items: bikeItems,
       });
 
+      sections.push({
+        title: 'Pre-Ride Activation',
+        emoji: '🏋️',
+        items: [
+          { id: 'marching', text: 'Core Single Leg Marching', detail: '1 set' },
+          { id: 'clams', text: 'Clams', detail: '2 sets each side' },
+          { id: 'abduction', text: 'Side Lying Abduction', detail: '2 sets' },
+        ],
+      });
+
       const clothingItems = getClothingItems(temp);
       sections.push({
         title: 'Clothing',
@@ -692,6 +702,26 @@ void (() => {
           ],
         });
       }
+
+      sections.push({
+        title: 'Post-Ride',
+        emoji: '🧹',
+        items: [
+          { id: 'chain', text: 'Wipe bike chain' },
+          {
+            id: 'wash',
+            text: 'Wash helmet and gloves',
+            detail: 'Mild soap and water, air dry',
+          },
+          { id: 'charge', text: 'Charge bike computer and lights' },
+          {
+            id: 'recovery',
+            text: 'Recovery shake or balanced meal',
+            detail: 'Within 30 minutes of finishing',
+          },
+          { id: 'shower', text: 'Shower' },
+        ],
+      });
 
       // Render checklist items
       const savedChecks = isRestore ? { ...checkState } : {};
