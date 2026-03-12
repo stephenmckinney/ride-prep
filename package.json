@@ -1,0 +1,14 @@
+{
+  "name": "ride-prep",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/tests.node.js",
+    "lint": "npx @biomejs/biome check .",
+    "lint:fix": "npx @biomejs/biome check --write .",
+    "format": "npx @biomejs/biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4"
+  }
+}
