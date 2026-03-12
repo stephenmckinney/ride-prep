@@ -325,6 +325,16 @@ test('getClothingItems: exactly 71F matches first CLOTHING_RULES boundary', () =
   assert.equal(findItem(items, 'shoes').text, 'Shoes');
 });
 
+// ── assessMetric: zero values ─────────────────────────────────────
+
+test('assessMetric: wind 0 is perfect (not ignored)', () => {
+  assert.equal(assessMetric('wind', 0), 'perfect');
+});
+
+test('assessMetric: AQI 0 is perfect (not ignored)', () => {
+  assert.equal(assessMetric('aqi', 0), 'perfect');
+});
+
 test('getClothingItems: below 30F returns base items with no CLOTHING_RULES match', () => {
   const items = getClothingItems(25);
   assert.equal(findItem(items, 'bibs').text, 'Classic winter tights');
