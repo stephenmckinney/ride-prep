@@ -42,9 +42,9 @@ const CLOTHING_RULES = [
   { min: 65, max: 70, prepend: [{ id: 'baselayer', text: 'Pro Team base layer', detail: 'Lightweight mesh' }, { id: 'jersey', text: 'Brevet jersey' }] },
   { min: 60, max: 64, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Brevet jersey' }] },
   { min: 55, max: 59, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Long-sleeve jersey' }] },
-  { min: 50, max: 54, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Long-sleeve jersey' }], append: [{ id: 'windjacket', text: 'Classic Wind jacket' }] },
-  { min: 40, max: 49, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Long-sleeve jersey' }], append: [{ id: 'softshell', text: 'Classic Softshell jacket' }, { id: 'woolhat', text: 'Wool hat (optional \u2014 helps with ears)' }] },
-  { min: 30, max: 39, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Long-sleeve jersey' }], append: [{ id: 'softshell', text: 'Classic Softshell jacket' }, { id: 'woolhat', text: 'Wool hat (must)' }, { id: 'scarf', text: 'Cycling scarf' }] },
+  { min: 50, max: 54, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Long-sleeve jersey' }, { id: 'windjacket', text: 'Classic Wind jacket' }] },
+  { min: 40, max: 49, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Long-sleeve jersey' }, { id: 'softshell', text: 'Classic Softshell jacket' }], append: [{ id: 'woolhat', text: 'Wool hat (optional \u2014 helps with ears)' }] },
+  { min: 30, max: 39, prepend: [{ id: 'baselayer', text: 'Merino wool base layer' }, { id: 'jersey', text: 'Long-sleeve jersey' }, { id: 'softshell', text: 'Classic Softshell jacket' }], append: [{ id: 'woolhat', text: 'Wool hat (must)' }, { id: 'scarf', text: 'Cycling scarf' }] },
 ];
 
 function getClothingItems(temp) {
@@ -52,12 +52,7 @@ function getClothingItems(temp) {
     { id: 'bibs', text: temp < 50 ? 'Classic winter tights' : temp < 60 ? 'Bib shorts + leg warmers' : 'Bib shorts' },
     { id: 'socks', text: 'Pro Team Socks' },
     { id: 'shoes', text: 'Shoes' + (temp < 50 ? ' + overshoes' : temp < 60 ? ' + oversocks' : '') },
-    { id: 'handkerchief', text: 'Handkerchief' },
-    { id: 'sunglasses', text: 'Sunglasses' },
-    { id: 'helmet', text: 'Helmet' },
     { id: 'gloves', text: temp < 50 ? 'Winter gloves' : temp < 60 ? 'Long-fingered gloves' : 'Short-fingered gloves' },
-    { id: 'whoop', text: 'WHOOP arm band' },
-    { id: 'bikebag', text: 'Bike bag (credit card, ID, phone)' },
   ];
 
   const rule = CLOTHING_RULES.find(r => temp >= r.min && temp <= r.max);
@@ -67,6 +62,16 @@ function getClothingItems(temp) {
   }
 
   return items;
+}
+
+function getAccessoryItems() {
+  return [
+    { id: 'helmet', text: 'Helmet' },
+    { id: 'sunglasses', text: 'Sunglasses' },
+    { id: 'handkerchief', text: 'Handkerchief' },
+    { id: 'whoop', text: 'WHOOP arm band' },
+    { id: 'bikebag', text: 'Bike bag (credit card, ID, phone)' },
+  ];
 }
 
 // ── Weather API ─────────────────────────────────────────────────
@@ -380,6 +385,9 @@ if (typeof document !== 'undefined') {
     const clothingItems = getClothingItems(temp);
     sections.push({ title: 'Clothing', emoji: '\uD83D\uDC55', items: clothingItems });
 
+    const accessoryItems = getAccessoryItems();
+    sections.push({ title: 'Accessories', emoji: '\uD83E\uDD7D', items: accessoryItems });
+
     const foodItems = [
       { id: 'preride', text: 'Pre-ride meal', detail: 'Oatmeal + berries or cereal + fruit \u2014 eat 1\u20132 hrs before' },
       { id: 'waffles', text: `Pack ${waffles} Honey Stinger Waffle${waffles > 1 ? 's' : ''}`, detail: `${waffles} waffle${waffles > 1 ? 's' : ''} for ~${hours} hr ride` },
@@ -505,5 +513,5 @@ if (typeof document !== 'undefined') {
 
 // ── Node.js exports for testing ──────────────────────────────────
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { esc, formatTime, assessWeather, isRidingAfterDark, getClothingItems };
+  module.exports = { esc, formatTime, assessWeather, isRidingAfterDark, getClothingItems, getAccessoryItems };
 }

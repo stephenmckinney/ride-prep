@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { esc, formatTime, assessWeather, isRidingAfterDark, getClothingItems } = require('../app.js');
+const { esc, formatTime, assessWeather, isRidingAfterDark, getClothingItems, getAccessoryItems } = require('../app.js');
 
 function findItem(items, id) {
   return items.find(i => i.id === id);
@@ -179,4 +179,23 @@ test('getClothingItems: exactly 50F gets leg warmers not winter tights', () => {
 
 test('getClothingItems: exactly 49F gets winter tights', () => {
   assert.equal(findItem(getClothingItems(49), 'bibs').text, 'Classic winter tights');
+});
+
+// ── getAccessoryItems ──────────────────────────────────────────
+
+test('getAccessoryItems: includes helmet, sunglasses, handkerchief, whoop, bike bag', () => {
+  const items = getAccessoryItems();
+  assert.ok(findItem(items, 'helmet'), 'should include helmet');
+  assert.ok(findItem(items, 'sunglasses'), 'should include sunglasses');
+  assert.ok(findItem(items, 'handkerchief'), 'should include handkerchief');
+  assert.ok(findItem(items, 'whoop'), 'should include WHOOP');
+  assert.ok(findItem(items, 'bikebag'), 'should include bike bag');
+});
+
+test('getAccessoryItems: accessories not in clothing items', () => {
+  const clothing = getClothingItems(75);
+  assert.equal(findItem(clothing, 'helmet'), undefined, 'helmet should not be in clothing');
+  assert.equal(findItem(clothing, 'sunglasses'), undefined, 'sunglasses should not be in clothing');
+  assert.equal(findItem(clothing, 'whoop'), undefined, 'whoop should not be in clothing');
+  assert.equal(findItem(clothing, 'bikebag'), undefined, 'bike bag should not be in clothing');
 });
