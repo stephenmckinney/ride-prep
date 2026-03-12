@@ -444,3 +444,22 @@ test('extractWeatherRange: clamps end index to array length', () => {
   assert.equal(range.tempHigh, 60);
   assert.equal(range.windMax, 15);
 });
+
+test('extractWeatherRange: start beyond data clamps to last element', () => {
+  const temps = [40, 50, 60];
+  const winds = [5, 10, 15];
+  const humidity = [50, 55, 60];
+  const precip = [0, 10, 20];
+
+  const range = extractWeatherRange(temps, winds, humidity, precip, 5, 2);
+  // start (5) clamps to len-1 (2), end clamps to max(start, 2) = 2
+  assert.equal(range.tempLow, 60);
+  assert.equal(range.tempHigh, 60);
+  assert.equal(range.windMax, 15);
+});
+
+test('extractWeatherRange: empty arrays return NaN', () => {
+  const range = extractWeatherRange([], [], [], [], 0, 0);
+  assert.equal(Number.isNaN(range.tempLow), true);
+  assert.equal(Number.isNaN(range.tempHigh), true);
+});

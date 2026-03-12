@@ -84,8 +84,19 @@ function extractWeatherRange(
   startIndex,
   endIndex,
 ) {
-  const start = Math.max(0, startIndex);
-  const end = Math.min(endIndex, hourlyTemps.length - 1);
+  const len = hourlyTemps.length;
+  if (len === 0) {
+    return {
+      tempLow: Number.NaN,
+      tempHigh: Number.NaN,
+      windMax: Number.NaN,
+      humidityMax: Number.NaN,
+      precipMax: Number.NaN,
+    };
+  }
+
+  const start = Math.min(Math.max(0, startIndex), len - 1);
+  const end = Math.min(Math.max(start, endIndex), len - 1);
 
   let tempLow = Number.POSITIVE_INFINITY;
   let tempHigh = Number.NEGATIVE_INFINITY;
@@ -323,8 +334,9 @@ async function fetchAqi(lat, lon, tz, date, startHourIndex, endHourIndex) {
     const res = await fetch(url);
     const data = await res.json();
     if (data.hourly?.us_aqi) {
-      const start = Math.max(0, startHourIndex);
-      const end = Math.min(endHourIndex, data.hourly.us_aqi.length - 1);
+      const len = data.hourly.us_aqi.length;
+      const start = Math.min(Math.max(0, startHourIndex), len - 1);
+      const end = Math.min(Math.max(start, endHourIndex), len - 1);
       let max = 0;
       for (let i = start; i <= end; i++) {
         if (data.hourly.us_aqi[i] > max) max = data.hourly.us_aqi[i];
@@ -603,7 +615,9 @@ void (() => {
       const location = els.rideLocation.value;
 
       if (!Number.isFinite(miles) || miles <= 0 || !Number.isFinite(tempLow)) {
-        alert('Please enter miles and temperature (or fetch weather first).');
+        alert(
+          'Please enter miles and a low temperature (or fetch weather first).',
+        );
         return;
       }
 
