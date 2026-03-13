@@ -17,13 +17,31 @@
 
 <body>
 
-  <div class="header">
-    <h1 id="headerTitle">Ride Prep</h1>
-    <div class="header-sub" id="headerSub">Get ready for tomorrow's ride</div>
-    <div class="progress-bar hidden" id="progressBar">
-      <div class="progress-fill" id="progressFill"></div>
+  <div class="ride-header" id="rideHeader">
+    <div class="ride-header__top">
+      <div class="ride-header__info">
+        <h1 class="ride-header__title" id="headerTitle">Ride Prep</h1>
+        <p class="ride-header__datetime" id="headerDatetime">Get ready for tomorrow's ride</p>
+        <div class="ride-header__meta hidden" id="headerMeta"></div>
+      </div>
+      <div class="progress-ring hidden" id="progressRing">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <circle class="progress-ring__track" cx="32" cy="32" r="26" />
+          <circle class="progress-ring__fill" cx="32" cy="32" r="26" id="progressFill" />
+        </svg>
+        <div class="progress-ring__label">
+          <span class="progress-ring__pct" id="progressPct">0%</span>
+          <span class="progress-ring__sub">done</span>
+        </div>
+      </div>
     </div>
-    <div class="progress-text hidden" id="progressText"></div>
+    <div class="weather-block hidden" id="weatherBlock">
+      <div class="weather-block__header">
+        <span class="weather-block__condition" id="weatherCondition"></span>
+        <span class="weather-block__location" id="weatherLocation"></span>
+      </div>
+      <div class="weather-block__strip" id="weatherStrip"></div>
+    </div>
   </div>
 
   <!-- SETUP SCREEN -->
@@ -48,7 +66,7 @@
 
     <div class="field">
       <label>Location</label>
-      <input type="text" id="rideLocation" value="Washington, DC">
+      <input type="text" id="rideLocation" value="Washington">
     </div>
 
     <div class="field">
@@ -151,8 +169,6 @@
 
   <!-- CHECKLIST SCREEN -->
   <div id="checklistScreen" class="hidden">
-    <div id="weatherBanner"></div>
-    <div id="rideSummary"></div>
     <div class="checklist" id="checklistContainer"></div>
     <div class="footer-actions">
       <button class="btn btn-secondary" id="resetBtn">New Ride</button>
