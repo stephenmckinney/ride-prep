@@ -21,6 +21,7 @@ jobs:
         run: |
           mkdir -p _preview
           cp index.html app.js styles.css sw.js manifest.json icon-192.png icon-512.png _preview/
+          sed -i "s/__CACHE_VERSION__/${GITHUB_SHA::7}/" _preview/sw.js
 
       - uses: rossjrw/pr-preview-action@v1
         with:
