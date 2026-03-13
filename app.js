@@ -352,6 +352,22 @@ async function fetchAqi(lat, lon, tz, date, startHourIndex, endHourIndex) {
   return null;
 }
 
+// ── Reverse Geocoding (Nominatim) ────────────────────────────────
+
+async function reverseGeocode(lat, lon) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const addr = data.address || {};
+    const city = addr.city || addr.town || addr.village || '';
+    const state = addr.state || '';
+    return { city, state };
+  } catch {
+    return { city: '', state: '' };
+  }
+}
+
 // ── DOM-dependent code (only runs in browser) ───────────────────
 
 void (() => {
@@ -395,6 +411,7 @@ void (() => {
       rideTime: $('rideTime'),
       rideMiles: $('rideMiles'),
       rideLocation: $('rideLocation'),
+      locateBtn: $('locateBtn'),
       rideBike: $('rideBike'),
       rideTempLow: $('rideTempLow'),
       rideTempHigh: $('rideTempHigh'),
@@ -410,6 +427,49 @@ void (() => {
       wpSunset: $('wpSunset'),
       wpPrecip: $('wpPrecip'),
     };
+
+    // ── Geolocation ──────────────────────────────────────────────
+    let pendingGeoCoords = null;
+
+    if (!navigator.geolocation) {
+      els.locateBtn.style.display = 'none';
+    }
+
+    els.locateBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) return;
+      els.locateBtn.classList.add('locating');
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const { city, state } = await reverseGeocode(latitude, longitude);
+
+          const cityName = city || 'Current Location';
+          const admin1 = state || '';
+          const displayName = admin1 ? `${cityName}, ${admin1}` : cityName;
+
+          els.rideLocation.value = displayName;
+          pendingGeoCoords = {
+            latitude,
+            longitude,
+            timezone,
+            cityName,
+            admin1,
+          };
+          els.locateBtn.classList.remove('locating');
+        },
+        () => {
+          // Permission denied or error — silently leave input unchanged
+          els.locateBtn.classList.remove('locating');
+        },
+        { enableHighAccuracy: false },
+      );
+    });
+
+    els.rideLocation.addEventListener('input', () => {
+      pendingGeoCoords = null;
+    });
 
     // ── Event Delegation ──────────────────────────────────────────
     els.fetchWeatherBtn.addEventListener('click', handleFetchWeather);
@@ -554,7 +614,13 @@ void (() => {
       showStatus('loading', 'Looking up location\u2026');
 
       try {
-        const geo = await geocodeLocation(location);
+        let geo;
+        if (pendingGeoCoords) {
+          geo = pendingGeoCoords;
+          pendingGeoCoords = null;
+        } else {
+          geo = await geocodeLocation(location);
+        }
         const label = `${geo.cityName}${geo.admin1 ? `, ${geo.admin1}` : ''}`;
         showStatus('loading', `Found ${label}. Fetching forecast\u2026`);
 
