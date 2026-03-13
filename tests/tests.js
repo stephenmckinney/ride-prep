@@ -102,50 +102,54 @@ test('handles empty string', () => {
 
 suite('assessWeather');
 
-test('perfect conditions at 70F, 5mph, AQI 30', () => {
+test('good conditions at 70F, 5mph, AQI 30', () => {
   const result = assessWeather(70, 5, 30);
-  assertEqual(result.cls, 'perfect');
+  assertEqual(result.cls, 'good');
 });
 
-test('tolerable at 58F', () => {
+test('fair at 58F', () => {
   const result = assessWeather(58, 5, 30);
-  assertEqual(result.cls, 'tolerable');
+  assertEqual(result.cls, 'fair');
 });
 
-test('tolerable at high AQI (51-100)', () => {
+test('fair at moderate AQI (51-100)', () => {
   const result = assessWeather(70, 5, 60);
-  assertEqual(result.cls, 'tolerable');
+  assertEqual(result.cls, 'fair');
 });
 
-test('tolerable at moderate wind (11-15 mph)', () => {
+test('fair at moderate wind (11-15 mph)', () => {
   const result = assessWeather(70, 12, 30);
-  assertEqual(result.cls, 'tolerable');
+  assertEqual(result.cls, 'fair');
 });
 
-test('warning at 45F', () => {
+test('rough at 45F', () => {
   const result = assessWeather(45, 5, 30);
-  assertEqual(result.cls, 'warning');
+  assertEqual(result.cls, 'rough');
 });
 
-test('warning at 95F', () => {
-  const result = assessWeather(95, 5, 30);
-  assertEqual(result.cls, 'warning');
+test('rough at 91F', () => {
+  const result = assessWeather(91, 5, 30);
+  assertEqual(result.cls, 'rough');
 });
 
-test('warning at dangerous AQI (>100)', () => {
+test('rough at high AQI (101-150)', () => {
   const result = assessWeather(70, 5, 110);
-  assertEqual(result.cls, 'warning');
+  assertEqual(result.cls, 'rough');
 });
 
-test('warning at high wind (>15 mph)', () => {
+test('rough at high wind (16-25 mph)', () => {
   const result = assessWeather(70, 20, 30);
-  assertEqual(result.cls, 'warning');
+  assertEqual(result.cls, 'rough');
 });
 
-test('below 30F overrides to warning', () => {
+test('nope at extreme cold (<40F)', () => {
   const result = assessWeather(25, 5, 30);
-  assertEqual(result.cls, 'warning');
-  assert(result.label.includes('30'), 'should mention 30F');
+  assertEqual(result.cls, 'nope');
+});
+
+test('nope at extreme heat (>95F)', () => {
+  const result = assessWeather(96, 5, 30);
+  assertEqual(result.cls, 'nope');
 });
 
 // ── isRidingAfterDark ───────────────────────────────────────────
