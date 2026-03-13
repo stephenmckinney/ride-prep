@@ -368,7 +368,6 @@ void (() => {
       progressRing: $('progressRing'),
       progressFill: $('progressFill'),
       progressPct: $('progressPct'),
-      headerDivider: $('headerDivider'),
       weatherBlock: $('weatherBlock'),
       weatherCondition: $('weatherCondition'),
       weatherLocation: $('weatherLocation'),
@@ -870,7 +869,6 @@ void (() => {
       `;
       els.headerMeta.classList.remove('hidden');
       els.progressRing.classList.remove('hidden');
-      els.headerDivider.classList.remove('hidden');
       els.weatherBlock.classList.remove('hidden');
       updateProgress();
       if (!isRestore) saveState();
@@ -912,7 +910,6 @@ void (() => {
         els.checklistScreen.classList.add('hidden');
         els.progressRing.classList.add('hidden');
         els.headerMeta.classList.add('hidden');
-        els.headerDivider.classList.add('hidden');
         els.weatherBlock.classList.add('hidden');
         els.headerTitle.textContent = 'Ride Prep';
         els.headerDatetime.textContent = "Get ready for tomorrow's ride";
