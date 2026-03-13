@@ -213,7 +213,11 @@ const CLOTHING_RULES = [
       { id: 'softshell', text: 'Classic Softshell jacket' },
     ],
     append: [
-      { id: 'woolhat', text: 'Wool hat (optional \u2014 helps with ears)' },
+      {
+        id: 'woolhat',
+        text: 'Wool hat',
+        detail: 'Optional \u2014 helps with ears',
+      },
     ],
   },
   {
@@ -225,7 +229,7 @@ const CLOTHING_RULES = [
       { id: 'softshell', text: 'Classic Softshell jacket' },
     ],
     append: [
-      { id: 'woolhat', text: 'Wool hat (must)' },
+      { id: 'woolhat', text: 'Wool hat', detail: 'Must have' },
       { id: 'scarf', text: 'Cycling scarf' },
     ],
   },
@@ -278,7 +282,7 @@ function getAccessoryItems() {
     { id: 'sunglasses', text: 'Sunglasses' },
     { id: 'handkerchief', text: 'Handkerchief' },
     { id: 'whoop', text: 'WHOOP arm band' },
-    { id: 'bikebag', text: 'Bike bag (credit card, ID, phone)' },
+    { id: 'bikebag', text: 'Bike bag', detail: 'Credit card, ID, phone' },
   ];
 }
 
@@ -735,7 +739,11 @@ void (() => {
         items: [
           { id: 'marching', text: 'Core Single Leg Marching', detail: '1 set' },
           { id: 'clams', text: 'Clams', detail: '2 sets each side' },
-          { id: 'abduction', text: 'Side Lying Abduction', detail: '2 sets' },
+          {
+            id: 'abduction',
+            text: 'Side Lying Abduction',
+            detail: '2 sets each side',
+          },
         ],
       });
 
@@ -771,7 +779,7 @@ void (() => {
         foodItems.push({
           id: 'bags',
           text: `Pack ${extraBags} Ziploc bag${extraBags > 1 ? 's' : ''} of Skratch mix`,
-          detail: 'For refills on the road',
+          detail: `${2 + extraBags} total bottles for ~${hours} hr ride`,
         });
       }
       foodItems.push({
