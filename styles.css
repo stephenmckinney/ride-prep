@@ -378,6 +378,51 @@ body {
   border-color: var(--accent);
 }
 
+.location-row {
+  display: flex;
+  gap: 8px;
+}
+
+.location-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-locate {
+  width: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-locate:active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@keyframes locatePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.btn-locate.locating {
+  color: var(--accent);
+  border-color: var(--accent);
+  animation: locatePulse 1s ease-in-out infinite;
+}
+
 .row {
   display: flex;
   gap: 10px;
