@@ -799,6 +799,7 @@ void (() => {
       sections.push({
         title: 'Post-Ride',
         emoji: '🧹',
+        postRide: true,
         items: [
           { id: 'chain', text: 'Wipe bike chain' },
           {
@@ -834,8 +835,9 @@ void (() => {
           const detailHtml = item.detail
             ? `<div class="item-detail">${esc(item.detail)}</div>`
             : '';
+          const postRideAttr = sec.postRide ? ' data-postride' : '';
           itemsHtml += `
-        <div class="item${checkedClass}" data-key="${esc(key)}">
+        <div class="item${checkedClass}" data-key="${esc(key)}"${postRideAttr}>
           <div class="checkbox">${CHECK_SVG}</div>
           <div><div class="item-text">${esc(item.text)}</div>${detailHtml}</div>
         </div>`;
@@ -883,8 +885,12 @@ void (() => {
     }
 
     function updateProgress() {
-      const total = Object.keys(checkState).length;
-      const done = Object.values(checkState).filter(Boolean).length;
+      const allItems = document.querySelectorAll('.item');
+      const rideItems = document.querySelectorAll('.item:not([data-postride])');
+      const total = rideItems.length;
+      const done = document.querySelectorAll(
+        '.item.checked:not([data-postride])',
+      ).length;
       const pct = total > 0 ? done / total : 0;
       const offset = PROGRESS_CIRCUMFERENCE * (1 - pct);
       els.progressFill.style.strokeDashoffset = offset;
