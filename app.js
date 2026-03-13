@@ -361,6 +361,17 @@ void (() => {
 
     const PROGRESS_CIRCUMFERENCE = 163.36; // 2 * π * 26
 
+    // Gamified progress tiers
+    const PROGRESS_TIERS = [
+      { min: 0, color: '#6d9fff', glow: 0 }, // blue — just starting
+      { min: 25, color: '#a78bfa', glow: 3 }, // purple — building momentum
+      { min: 50, color: '#fb923c', glow: 5 }, // orange — heating up
+      { min: 75, color: '#34d399', glow: 6 }, // green — almost there
+      { min: 100, color: '#fbbf24', glow: 8 }, // gold — complete!
+    ];
+    let prevTierIndex = -1;
+    let prevPctRound = -1;
+
     const els = {
       headerTitle: $('headerTitle'),
       headerDatetime: $('headerDatetime'),
@@ -884,18 +895,105 @@ void (() => {
       saveState();
     }
 
+    function getTierIndex(pctRound) {
+      let idx = 0;
+      for (let i = PROGRESS_TIERS.length - 1; i >= 0; i--) {
+        if (pctRound >= PROGRESS_TIERS[i].min) {
+          idx = i;
+          break;
+        }
+      }
+      return idx;
+    }
+
+    function spawnConfetti() {
+      const ring = els.progressRing;
+      const container = document.createElement('div');
+      container.className = 'progress-ring__confetti';
+
+      const colors = ['#fbbf24', '#f59e0b', '#fcd34d', '#a78bfa', '#34d399'];
+      const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+
+      for (const angle of angles) {
+        const dot = document.createElement('div');
+        dot.className = 'progress-ring__confetti-dot';
+        const rad = (angle * Math.PI) / 180;
+        const dist = 32 + Math.random() * 12;
+        const x = Math.cos(rad) * dist;
+        const y = Math.sin(rad) * dist;
+        dot.style.background =
+          colors[Math.floor(Math.random() * colors.length)];
+        dot.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1)`;
+        dot.style.opacity = '0';
+        dot.style.transition = 'transform 0.5s ease-out, opacity 0.5s ease-out';
+        container.appendChild(dot);
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            dot.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1)`;
+            dot.style.opacity = '1';
+            setTimeout(() => {
+              dot.style.opacity = '0';
+            }, 300);
+          });
+        });
+      }
+
+      ring.appendChild(container);
+      setTimeout(() => container.remove(), 800);
+    }
+
     function updateProgress() {
-      const allItems = document.querySelectorAll('.item');
       const rideItems = document.querySelectorAll('.item:not([data-postride])');
       const total = rideItems.length;
       const done = document.querySelectorAll(
         '.item.checked:not([data-postride])',
       ).length;
       const pct = total > 0 ? done / total : 0;
+      const pctRound = Math.round(pct * 100);
       const offset = PROGRESS_CIRCUMFERENCE * (1 - pct);
-      els.progressFill.style.strokeDashoffset = offset;
-      els.progressPct.textContent = `${Math.round(pct * 100)}%`;
 
+      // Update ring fill
+      els.progressFill.style.strokeDashoffset = offset;
+      els.progressPct.textContent = `${pctRound}%`;
+
+      // Determine tier and apply color
+      const tierIdx = getTierIndex(pctRound);
+      const tier = PROGRESS_TIERS[tierIdx];
+      const ring = els.progressRing;
+
+      ring.style.setProperty('--ring-color', tier.color);
+      ring.style.setProperty('--ring-glow', tier.glow);
+
+      // Bounce on tier change (skip initial load)
+      if (
+        prevTierIndex >= 0 &&
+        tierIdx !== prevTierIndex &&
+        pctRound > prevPctRound
+      ) {
+        ring.classList.remove('progress-ring--bounce');
+        void ring.offsetWidth; // reflow to restart animation
+        ring.classList.add('progress-ring--bounce');
+        setTimeout(() => ring.classList.remove('progress-ring--bounce'), 500);
+      }
+
+      // 100% celebration
+      if (pctRound === 100) {
+        ring.classList.add('progress-ring--complete');
+        els.progressPct.textContent = '100%';
+        document.querySelector('.progress-ring__sub').textContent = 'ready!';
+        if (prevPctRound >= 0 && prevPctRound < 100) {
+          spawnConfetti();
+        }
+      } else {
+        ring.classList.remove('progress-ring--complete');
+        document.querySelector('.progress-ring__sub').textContent = 'done';
+      }
+
+      prevTierIndex = tierIdx;
+      prevPctRound = pctRound;
+
+      // Section badges
       for (const sec of document.querySelectorAll('.section')) {
         const items = sec.querySelectorAll('.item');
         const checked = sec.querySelectorAll('.item.checked');
