@@ -97,16 +97,20 @@ body {
 /* ── Progress Ring ───────────────────────────────────────────── */
 
 .progress-ring {
+  --ring-color: #6d9fff;
+  --ring-glow: 0;
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
 }
 
 .progress-ring svg {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   transform: rotate(-90deg);
+  filter: drop-shadow(0 0 calc(var(--ring-glow) * 1px) var(--ring-color));
+  transition: filter 0.5s ease;
 }
 
 .progress-ring__track {
@@ -117,12 +121,12 @@ body {
 
 .progress-ring__fill {
   fill: none;
-  stroke: var(--green);
+  stroke: var(--ring-color);
   stroke-width: 5;
   stroke-linecap: round;
   stroke-dasharray: 163.36;
   stroke-dashoffset: 163.36;
-  transition: stroke-dashoffset 0.5s ease;
+  transition: stroke-dashoffset 0.5s ease, stroke 0.4s ease;
 }
 
 .progress-ring__label {
@@ -133,6 +137,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 1px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .progress-ring__pct {
@@ -140,12 +145,108 @@ body {
   font-weight: 600;
   color: var(--text);
   line-height: 1;
+  transition: color 0.4s ease;
 }
 
 .progress-ring__sub {
   font-size: 9px;
   color: var(--text-muted);
   line-height: 1;
+  transition: color 0.4s ease, font-size 0.3s ease;
+}
+
+/* Bounce pop on tier change */
+@keyframes ringBounce {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.18);
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.progress-ring--bounce .progress-ring__label {
+  animation: ringBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.progress-ring--bounce svg {
+  animation: ringBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 100% complete celebration */
+@keyframes ringPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px var(--ring-color));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--ring-color));
+  }
+}
+
+.progress-ring--complete svg {
+  animation: ringPulse 2s ease-in-out infinite;
+}
+
+.progress-ring--complete .progress-ring__pct {
+  color: var(--ring-color);
+}
+
+.progress-ring--complete .progress-ring__sub {
+  color: var(--ring-color);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Confetti burst */
+@keyframes confettiBurst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+.progress-ring__confetti {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  animation: confettiBurst 0.7s ease-out forwards;
+}
+
+.progress-ring__confetti-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  animation: confettiDot 0.7s ease-out forwards;
+}
+
+@keyframes confettiDot {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ── Weather Block (in header) ───────────────────────────────── */
