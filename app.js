@@ -17,49 +17,46 @@ function formatTime(t) {
 
 const METRIC_THRESHOLDS = {
   temp: [
-    { check: (v) => v < 50 || v > 90, level: 'warning' },
-    { check: (v) => v < 60 || v > 85, level: 'tolerable' },
+    { check: (v) => v < 40 || v > 95, level: 'nope' },
+    { check: (v) => v < 50 || v > 90, level: 'rough' },
+    { check: (v) => v < 60 || v > 85, level: 'fair' },
   ],
   wind: [
-    { check: (v) => v > 15, level: 'warning' },
-    { check: (v) => v > 10, level: 'tolerable' },
+    { check: (v) => v > 25, level: 'nope' },
+    { check: (v) => v > 15, level: 'rough' },
+    { check: (v) => v > 10, level: 'fair' },
   ],
   aqi: [
-    { check: (v) => v > 100, level: 'warning' },
-    { check: (v) => v > 50, level: 'tolerable' },
+    { check: (v) => v > 150, level: 'nope' },
+    { check: (v) => v > 100, level: 'rough' },
+    { check: (v) => v > 50, level: 'fair' },
   ],
 };
 
 function assessMetric(type, value) {
   if (value === null || value === undefined || Number.isNaN(value))
-    return 'perfect';
+    return 'good';
   const thresholds = METRIC_THRESHOLDS[type];
-  if (!thresholds) return 'perfect';
+  if (!thresholds) return 'good';
   for (const t of thresholds) {
     if (t.check(value)) return t.level;
   }
-  return 'perfect';
+  return 'good';
 }
 
 function assessWeather(temp, wind, aqi) {
-  if (temp < 30)
-    return {
-      cls: 'warning',
-      label: 'Below 30\u00B0F \u2014 consider staying inside!',
-    };
   const levels = [
     assessMetric('temp', temp),
     assessMetric('wind', wind),
     assessMetric('aqi', aqi),
   ];
-  if (levels.includes('warning'))
-    return {
-      cls: 'warning',
-      label: 'Conditions flagged \u2014 ride with caution',
-    };
-  if (levels.includes('tolerable'))
-    return { cls: 'tolerable', label: 'Tolerable conditions' };
-  return { cls: 'perfect', label: 'Perfect conditions' };
+  if (levels.includes('nope'))
+    return { cls: 'nope', label: "Bro?! It's trainer season" };
+  if (levels.includes('rough'))
+    return { cls: 'rough', label: 'Oof! Do you really want to ride outside?' };
+  if (levels.includes('fair'))
+    return { cls: 'fair', label: "Good conditions. Let's ride!" };
+  return { cls: 'good', label: 'Perfect conditions!' };
 }
 
 function isRidingAfterDark(rideTime, rideDurationHrs, sunsetStr) {
@@ -362,17 +359,33 @@ void (() => {
     const $ = (id) => document.getElementById(id);
     if (!$('fetchWeatherBtn')) return; // not on the app page (e.g. test runner)
 
+    const PROGRESS_CIRCUMFERENCE = 163.36; // 2 * π * 26
+
+    // Gamified progress tiers
+    const PROGRESS_TIERS = [
+      { min: 0, color: '#6d9fff', glow: 0 }, // blue — just starting
+      { min: 25, color: '#a78bfa', glow: 3 }, // purple — building momentum
+      { min: 50, color: '#fb923c', glow: 5 }, // orange — heating up
+      { min: 75, color: '#34d399', glow: 6 }, // green — almost there
+      { min: 100, color: '#fbbf24', glow: 8 }, // gold — complete!
+    ];
+    let prevTierIndex = -1;
+    let prevPctRound = -1;
+
     const els = {
       headerTitle: $('headerTitle'),
-      headerSub: $('headerSub'),
-      progressBar: $('progressBar'),
+      headerDatetime: $('headerDatetime'),
+      headerMeta: $('headerMeta'),
+      progressRing: $('progressRing'),
       progressFill: $('progressFill'),
-      progressText: $('progressText'),
+      progressPct: $('progressPct'),
+      weatherBlock: $('weatherBlock'),
+      weatherCondition: $('weatherCondition'),
+      weatherLocation: $('weatherLocation'),
+      weatherStrip: $('weatherStrip'),
       setupScreen: $('setupScreen'),
       checklistScreen: $('checklistScreen'),
       checklistContainer: $('checklistContainer'),
-      weatherBanner: $('weatherBanner'),
-      rideSummary: $('rideSummary'),
       fetchWeatherBtn: $('fetchWeatherBtn'),
       weatherStatus: $('weatherStatus'),
       weatherPreview: $('weatherPreview'),
@@ -654,12 +667,11 @@ void (() => {
       const tempLowCls = assessMetric('temp', tempLow);
       const tempHighCls = assessMetric('temp', effectiveHigh);
       // Use the worse of the two temp assessments for the range display
+      const LEVEL_RANK = { good: 0, fair: 1, rough: 2, nope: 3 };
       const tempCls =
-        tempLowCls === 'warning' || tempHighCls === 'warning'
-          ? 'warning'
-          : tempLowCls === 'tolerable' || tempHighCls === 'tolerable'
-            ? 'tolerable'
-            : 'perfect';
+        LEVEL_RANK[tempLowCls] > LEVEL_RANK[tempHighCls]
+          ? tempLowCls
+          : tempHighCls;
       const windCls = assessMetric('wind', wind);
       const aqiCls = assessMetric('aqi', aqi);
 
@@ -667,39 +679,26 @@ void (() => {
         ? `${esc(String(tempLow))}\u2013${esc(String(effectiveHigh))}\u00B0F`
         : `${esc(String(tempLow))}\u00B0F`;
 
-      els.weatherBanner.innerHTML = `
-    <div class="weather-banner">
-      <div class="weather-tag ${weather.cls}">${esc(weather.label)}</div>
-      <div class="weather-grid">
-        <div class="weather-stat"><div class="val metric-${tempCls}">${tempDisplay}</div><div class="label">Temp range</div></div>
-        <div class="weather-stat"><div class="val metric-${windCls}">${Number.isFinite(wind) ? `${esc(String(wind))} MPH` : '\u2014'}</div><div class="label">Max wind</div></div>
-        <div class="weather-stat"><div class="val metric-${aqiCls}">${Number.isFinite(aqi) ? esc(String(aqi)) : '\u2014'}</div><div class="label">Max AQI</div></div>
-        <div class="weather-stat"><div class="val">${esc(humidity)}</div><div class="label">Max humidity</div></div>
-        <div class="weather-stat"><div class="val">${esc(precipChance)}</div><div class="label">Max rain chance</div></div>
-        <div class="weather-stat"><div class="val">${sunsetStr ? esc(formatTime(sunsetStr)) : '\u2014'}</div><div class="label">Sunset</div></div>
-      </div>
-      <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">${esc(locationName)}</div>
-    </div>
-  `;
+      // Populate weather block in header
+      els.weatherBlock.className = `weather-block weather-block--${weather.cls}`;
+      els.weatherCondition.textContent = weather.label;
+      els.weatherLocation.textContent = locationName;
+      els.weatherStrip.innerHTML = `
+        <div class="weather-stat"><div class="weather-stat__value metric-${tempCls}">${tempDisplay}</div><div class="weather-stat__label">Temp</div></div>
+        <div class="weather-sep"></div>
+        <div class="weather-stat"><div class="weather-stat__value metric-${windCls}">${Number.isFinite(wind) ? `${esc(String(wind))} mph` : '\u2014'}</div><div class="weather-stat__label">Wind</div></div>
+        <div class="weather-sep"></div>
+        <div class="weather-stat"><div class="weather-stat__value">${esc(precipChance)}</div><div class="weather-stat__label">Rain</div></div>
+        <div class="weather-sep"></div>
+        <div class="weather-stat"><div class="weather-stat__value metric-${aqiCls}">${Number.isFinite(aqi) ? `AQI ${esc(String(aqi))}` : '\u2014'}</div><div class="weather-stat__label">Air</div></div>
+        <div class="weather-sep"></div>
+        <div class="weather-stat"><div class="weather-stat__value">${sunsetStr ? esc(formatTime(sunsetStr)) : '\u2014'}</div><div class="weather-stat__label">Sunset</div></div>
+      `;
 
       const dateStr = new Date(`${rideDate}T12:00:00`).toLocaleDateString(
         'en-US',
-        { weekday: 'long', month: 'short', day: 'numeric' },
+        { weekday: 'short', month: 'short', day: 'numeric' },
       );
-      let summaryP = `<span class="detail">${esc(dateStr)} at ${esc(formatTime(rideTime))}</span><br>`;
-      summaryP += `<span class="detail">${esc(String(miles))} miles</span> on the <span class="detail">${esc(bike.name)}</span><br>`;
-      summaryP += `Est. duration: <span class="detail">~${hours} hour${hours > 1 ? 's' : ''}</span>`;
-      if (meetup)
-        summaryP += `<br>Meeting: <span class="detail">${esc(meetup)}</span>`;
-      if (ridingDark)
-        summaryP += `<br><span style="color:var(--yellow);">Sunset at ${esc(formatTime(sunsetStr))} \u2014 you may be riding in the dark. Ensure lights are charged and mounted.</span>`;
-
-      els.rideSummary.innerHTML = `
-    <div class="ride-summary">
-      <h3>Ride Summary</h3>
-      <p>${summaryP}</p>
-    </div>
-  `;
 
       // Build sections
       const sections = [];
@@ -811,6 +810,7 @@ void (() => {
       sections.push({
         title: 'Post-Ride',
         emoji: '🧹',
+        postRide: true,
         items: [
           { id: 'chain', text: 'Wipe bike chain' },
           {
@@ -846,8 +846,9 @@ void (() => {
           const detailHtml = item.detail
             ? `<div class="item-detail">${esc(item.detail)}</div>`
             : '';
+          const postRideAttr = sec.postRide ? ' data-postride' : '';
           itemsHtml += `
-        <div class="item${checkedClass}" data-key="${esc(key)}">
+        <div class="item${checkedClass}" data-key="${esc(key)}"${postRideAttr}>
           <div class="checkbox">${CHECK_SVG}</div>
           <div><div class="item-text">${esc(item.text)}</div>${detailHtml}</div>
         </div>`;
@@ -865,10 +866,23 @@ void (() => {
       els.checklistContainer.innerHTML = html;
       els.setupScreen.classList.add('hidden');
       els.checklistScreen.classList.remove('hidden');
-      els.progressBar.classList.remove('hidden');
-      els.progressText.classList.remove('hidden');
-      els.headerTitle.textContent = `${miles}mi Ride Prep`;
-      els.headerSub.textContent = `${bike.name} \u2014 ${dateStr}`;
+
+      // Populate header
+      const cityName = location.split(',')[0].trim();
+      els.headerTitle.textContent = `${miles}mi ${cityName} Ride Prep`;
+      els.headerDatetime.textContent = `${dateStr} \u00B7 ${formatTime(rideTime)}`;
+      els.headerMeta.innerHTML = `
+        <span class="ride-header__meta-value">${esc(String(miles))} mi</span>
+        <span>distance</span>
+        <span class="ride-header__meta-sep">\u00B7</span>
+        <span class="ride-header__meta-value">~${hours} hr${hours > 1 ? 's' : ''}</span>
+        <span>est.</span>
+        <span class="ride-header__meta-sep">\u00B7</span>
+        <span class="ride-header__meta-bike">${esc(bike.name)}</span>
+      `;
+      els.headerMeta.classList.remove('hidden');
+      els.progressRing.classList.remove('hidden');
+      els.weatherBlock.classList.remove('hidden');
       updateProgress();
       if (!isRestore) saveState();
     }
@@ -881,13 +895,105 @@ void (() => {
       saveState();
     }
 
-    function updateProgress() {
-      const total = Object.keys(checkState).length;
-      const done = Object.values(checkState).filter(Boolean).length;
-      const pct = total > 0 ? (done / total) * 100 : 0;
-      els.progressFill.style.width = `${pct}%`;
-      els.progressText.textContent = `${done}/${total} items \u2014 ${Math.round(pct)}%`;
+    function getTierIndex(pctRound) {
+      let idx = 0;
+      for (let i = PROGRESS_TIERS.length - 1; i >= 0; i--) {
+        if (pctRound >= PROGRESS_TIERS[i].min) {
+          idx = i;
+          break;
+        }
+      }
+      return idx;
+    }
 
+    function spawnConfetti() {
+      const ring = els.progressRing;
+      const container = document.createElement('div');
+      container.className = 'progress-ring__confetti';
+
+      const colors = ['#fbbf24', '#f59e0b', '#fcd34d', '#a78bfa', '#34d399'];
+      const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+
+      for (const angle of angles) {
+        const dot = document.createElement('div');
+        dot.className = 'progress-ring__confetti-dot';
+        const rad = (angle * Math.PI) / 180;
+        const dist = 32 + Math.random() * 12;
+        const x = Math.cos(rad) * dist;
+        const y = Math.sin(rad) * dist;
+        dot.style.background =
+          colors[Math.floor(Math.random() * colors.length)];
+        dot.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1)`;
+        dot.style.opacity = '0';
+        dot.style.transition = 'transform 0.5s ease-out, opacity 0.5s ease-out';
+        container.appendChild(dot);
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            dot.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1)`;
+            dot.style.opacity = '1';
+            setTimeout(() => {
+              dot.style.opacity = '0';
+            }, 300);
+          });
+        });
+      }
+
+      ring.appendChild(container);
+      setTimeout(() => container.remove(), 800);
+    }
+
+    function updateProgress() {
+      const rideItems = document.querySelectorAll('.item:not([data-postride])');
+      const total = rideItems.length;
+      const done = document.querySelectorAll(
+        '.item.checked:not([data-postride])',
+      ).length;
+      const pct = total > 0 ? done / total : 0;
+      const pctRound = Math.round(pct * 100);
+      const offset = PROGRESS_CIRCUMFERENCE * (1 - pct);
+
+      // Update ring fill
+      els.progressFill.style.strokeDashoffset = offset;
+      els.progressPct.textContent = `${pctRound}%`;
+
+      // Determine tier and apply color
+      const tierIdx = getTierIndex(pctRound);
+      const tier = PROGRESS_TIERS[tierIdx];
+      const ring = els.progressRing;
+
+      ring.style.setProperty('--ring-color', tier.color);
+      ring.style.setProperty('--ring-glow', tier.glow);
+
+      // Bounce on tier change (skip initial load)
+      if (
+        prevTierIndex >= 0 &&
+        tierIdx !== prevTierIndex &&
+        pctRound > prevPctRound
+      ) {
+        ring.classList.remove('progress-ring--bounce');
+        void ring.offsetWidth; // reflow to restart animation
+        ring.classList.add('progress-ring--bounce');
+        setTimeout(() => ring.classList.remove('progress-ring--bounce'), 500);
+      }
+
+      // 100% celebration
+      if (pctRound === 100) {
+        ring.classList.add('progress-ring--complete');
+        els.progressPct.textContent = '100%';
+        document.querySelector('.progress-ring__sub').textContent = 'ready!';
+        if (prevPctRound >= 0 && prevPctRound < 100) {
+          spawnConfetti();
+        }
+      } else {
+        ring.classList.remove('progress-ring--complete');
+        document.querySelector('.progress-ring__sub').textContent = 'done';
+      }
+
+      prevTierIndex = tierIdx;
+      prevPctRound = pctRound;
+
+      // Section badges
       for (const sec of document.querySelectorAll('.section')) {
         const items = sec.querySelectorAll('.item');
         const checked = sec.querySelectorAll('.item.checked');
@@ -906,10 +1012,11 @@ void (() => {
         weatherData = null;
         els.setupScreen.classList.remove('hidden');
         els.checklistScreen.classList.add('hidden');
-        els.progressBar.classList.add('hidden');
-        els.progressText.classList.add('hidden');
+        els.progressRing.classList.add('hidden');
+        els.headerMeta.classList.add('hidden');
+        els.weatherBlock.classList.add('hidden');
         els.headerTitle.textContent = 'Ride Prep';
-        els.headerSub.textContent = "Get ready for tomorrow's ride";
+        els.headerDatetime.textContent = "Get ready for tomorrow's ride";
         els.rideMiles.value = '';
         els.rideTempLow.value = '';
         els.rideTempHigh.value = '';
@@ -921,8 +1028,7 @@ void (() => {
         els.weatherStatus.className = 'weather-status';
         els.weatherPreview.classList.remove('visible');
         els.checklistContainer.innerHTML = '';
-        els.weatherBanner.innerHTML = '';
-        els.rideSummary.innerHTML = '';
+        els.weatherStrip.innerHTML = '';
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         els.rideDate.value = tomorrow.toISOString().split('T')[0];

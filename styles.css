@@ -6,14 +6,15 @@
   --text: #e2e8f0;
   --text-muted: #7a8696;
   --accent: #6d9fff;
-  --accent-dim: rgba(109, 159, 255, 0.12);
+  --accent-dim: rgba(109, 159, 255, 0.2);
   --green: #34d399;
-  --green-dim: rgba(52, 211, 153, 0.12);
+  --green-dim: rgba(52, 211, 153, 0.2);
   --yellow: #fbbf24;
-  --yellow-dim: rgba(251, 191, 36, 0.12);
+  --yellow-dim: rgba(251, 191, 36, 0.2);
   --red: #f87171;
-  --red-dim: rgba(248, 113, 113, 0.12);
+  --red-dim: rgba(248, 113, 113, 0.2);
   --blue: #6d9fff;
+  --blue-dim: rgba(109, 159, 255, 0.2);
   --radius: 12px;
 }
 
@@ -33,50 +34,304 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
-.header {
+.ride-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(18, 21, 24, 0.85);
+  background: rgba(18, 21, 24, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
-  padding-top: calc(env(safe-area-inset-top, 12px) + 12px);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
-.header h1 {
+.ride-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.ride-header__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ride-header__title {
   font-size: 18px;
   font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  margin-bottom: 2px;
 }
 
-.header-sub {
+.ride-header__datetime {
   font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.ride-header__meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ride-header__meta-value {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.ride-header__meta-sep {
+  color: var(--border);
+}
+
+.ride-header__meta-bike {
+  color: var(--text-muted);
+}
+
+/* ── Progress Ring ───────────────────────────────────────────── */
+
+.progress-ring {
+  --ring-color: #6d9fff;
+  --ring-glow: 0;
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.progress-ring svg {
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+  filter: drop-shadow(0 0 calc(var(--ring-glow) * 1px) var(--ring-color));
+  transition: filter 0.5s ease;
+}
+
+.progress-ring__track {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 5;
+}
+
+.progress-ring__fill {
+  fill: none;
+  stroke: var(--ring-color);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 163.36;
+  stroke-dashoffset: 163.36;
+  transition: stroke-dashoffset 0.5s ease, stroke 0.4s ease;
+}
+
+.progress-ring__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.progress-ring__pct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+  transition: color 0.4s ease;
+}
+
+.progress-ring__sub {
+  font-size: 9px;
+  color: var(--text-muted);
+  line-height: 1;
+  transition: color 0.4s ease, font-size 0.3s ease;
+}
+
+/* Bounce pop on tier change */
+@keyframes ringBounce {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.18);
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.progress-ring--bounce .progress-ring__label {
+  animation: ringBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.progress-ring--bounce svg {
+  animation: ringBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 100% complete celebration */
+@keyframes ringPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px var(--ring-color));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--ring-color));
+  }
+}
+
+.progress-ring--complete svg {
+  animation: ringPulse 2s ease-in-out infinite;
+}
+
+.progress-ring--complete .progress-ring__pct {
+  color: var(--ring-color);
+}
+
+.progress-ring--complete .progress-ring__sub {
+  color: var(--ring-color);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Confetti burst */
+@keyframes confettiBurst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+.progress-ring__confetti {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  animation: confettiBurst 0.7s ease-out forwards;
+}
+
+.progress-ring__confetti-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  animation: confettiDot 0.7s ease-out forwards;
+}
+
+@keyframes confettiDot {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ── Weather Block (in header) ───────────────────────────────── */
+
+.weather-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+}
+
+.weather-block--good .weather-block__header {
+  background: var(--green-dim);
+}
+
+.weather-block--fair .weather-block__header {
+  background: var(--blue-dim);
+}
+
+.weather-block--rough .weather-block__header {
+  background: var(--yellow-dim);
+}
+
+.weather-block--nope .weather-block__header {
+  background: var(--red-dim);
+}
+
+.weather-block__condition {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.weather-block--good .weather-block__condition {
+  color: var(--green);
+}
+
+.weather-block--fair .weather-block__condition {
+  color: var(--blue);
+}
+
+.weather-block--rough .weather-block__condition {
+  color: var(--yellow);
+}
+
+.weather-block--nope .weather-block__condition {
+  color: var(--red);
+}
+
+.weather-block__location {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.weather-block__strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.weather-block .weather-stat {
+  text-align: center;
+  flex: 1;
+}
+
+.weather-block .weather-stat__value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.weather-block .weather-stat__label {
+  font-size: 10px;
   color: var(--text-muted);
   margin-top: 2px;
 }
 
-.progress-bar {
-  width: 100%;
-  height: 4px;
+.weather-sep {
+  width: 1px;
+  height: 26px;
   background: var(--border);
-  border-radius: 2px;
-  margin-top: 10px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--green));
-  border-radius: 2px;
-  transition: width 0.4s ease;
-}
-
-.progress-text {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 4px;
-  text-align: right;
+  flex-shrink: 0;
 }
 
 .setup {
@@ -377,93 +632,16 @@ body {
   margin-top: 2px;
 }
 
-.weather-banner {
-  margin: 16px;
-  padding: 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
+.weather-stat__value.metric-fair {
+  color: var(--blue);
 }
 
-.weather-banner h3 {
-  font-size: 15px;
-  margin-bottom: 8px;
-}
-
-.weather-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.weather-stat .val {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.weather-stat .label {
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
-.weather-tag {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-}
-
-.weather-tag.perfect {
-  background: rgba(52, 211, 153, 0.1);
-  color: var(--green);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-}
-
-.weather-tag.tolerable {
-  background: rgba(251, 191, 36, 0.1);
-  color: var(--yellow);
-  border: 1px solid rgba(251, 191, 36, 0.25);
-}
-
-.weather-tag.warning {
-  background: rgba(248, 113, 113, 0.1);
-  color: var(--red);
-  border: 1px solid rgba(248, 113, 113, 0.25);
-}
-
-.val.metric-tolerable {
+.weather-stat__value.metric-rough {
   color: var(--yellow);
 }
 
-.val.metric-warning {
+.weather-stat__value.metric-nope {
   color: var(--red);
-}
-
-.ride-summary {
-  margin: 16px;
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  background: var(--accent-dim);
-  border: 1px solid rgba(109, 159, 255, 0.25);
-}
-
-.ride-summary h3 {
-  font-size: 12px;
-  color: var(--accent);
-  margin-bottom: 6px;
-}
-
-.ride-summary p {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.ride-summary .detail {
-  color: var(--text);
-  font-weight: 500;
 }
 
 .hidden {

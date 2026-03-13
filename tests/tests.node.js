@@ -69,42 +69,52 @@ test('esc: handles empty string', () => {
 
 // ── assessWeather ───────────────────────────────────────────────
 
-test('assessWeather: perfect conditions at 70F, 5mph, AQI 30', () => {
-  assert.equal(assessWeather(70, 5, 30).cls, 'perfect');
+test('assessWeather: good conditions at 70F, 5mph, AQI 30', () => {
+  assert.equal(assessWeather(70, 5, 30).cls, 'good');
 });
 
-test('assessWeather: tolerable at 58F', () => {
-  assert.equal(assessWeather(58, 5, 30).cls, 'tolerable');
+test('assessWeather: fair at 58F', () => {
+  assert.equal(assessWeather(58, 5, 30).cls, 'fair');
 });
 
-test('assessWeather: tolerable at high AQI (51-100)', () => {
-  assert.equal(assessWeather(70, 5, 60).cls, 'tolerable');
+test('assessWeather: fair at moderate AQI (51-100)', () => {
+  assert.equal(assessWeather(70, 5, 60).cls, 'fair');
 });
 
-test('assessWeather: tolerable at moderate wind (11-15 mph)', () => {
-  assert.equal(assessWeather(70, 12, 30).cls, 'tolerable');
+test('assessWeather: fair at moderate wind (11-15 mph)', () => {
+  assert.equal(assessWeather(70, 12, 30).cls, 'fair');
 });
 
-test('assessWeather: warning at 45F', () => {
-  assert.equal(assessWeather(45, 5, 30).cls, 'warning');
+test('assessWeather: rough at 45F', () => {
+  assert.equal(assessWeather(45, 5, 30).cls, 'rough');
 });
 
-test('assessWeather: warning at 95F', () => {
-  assert.equal(assessWeather(95, 5, 30).cls, 'warning');
+test('assessWeather: rough at 91F', () => {
+  assert.equal(assessWeather(91, 5, 30).cls, 'rough');
 });
 
-test('assessWeather: warning at dangerous AQI (>100)', () => {
-  assert.equal(assessWeather(70, 5, 110).cls, 'warning');
+test('assessWeather: rough at high AQI (101-150)', () => {
+  assert.equal(assessWeather(70, 5, 110).cls, 'rough');
 });
 
-test('assessWeather: warning at high wind (>15 mph)', () => {
-  assert.equal(assessWeather(70, 20, 30).cls, 'warning');
+test('assessWeather: rough at high wind (16-25 mph)', () => {
+  assert.equal(assessWeather(70, 20, 30).cls, 'rough');
 });
 
-test('assessWeather: below 30F overrides to warning', () => {
-  const result = assessWeather(25, 5, 30);
-  assert.equal(result.cls, 'warning');
-  assert.ok(result.label.includes('30'), 'should mention 30F');
+test('assessWeather: nope at extreme cold (<40F)', () => {
+  assert.equal(assessWeather(25, 5, 30).cls, 'nope');
+});
+
+test('assessWeather: nope at extreme heat (>95F)', () => {
+  assert.equal(assessWeather(96, 5, 30).cls, 'nope');
+});
+
+test('assessWeather: nope at extreme wind (>25 mph)', () => {
+  assert.equal(assessWeather(70, 30, 30).cls, 'nope');
+});
+
+test('assessWeather: nope at extreme AQI (>150)', () => {
+  assert.equal(assessWeather(70, 5, 160).cls, 'nope');
 });
 
 // ── isRidingAfterDark ───────────────────────────────────────────
@@ -257,64 +267,96 @@ test('getAccessoryItems: accessories not in clothing items', () => {
 
 // ── assessMetric ──────────────────────────────────────────────────
 
-test('assessMetric: temp 49 is warning', () => {
-  assert.equal(assessMetric('temp', 49), 'warning');
+test('assessMetric: temp 49 is rough', () => {
+  assert.equal(assessMetric('temp', 49), 'rough');
 });
 
-test('assessMetric: temp 50 is tolerable', () => {
-  assert.equal(assessMetric('temp', 50), 'tolerable');
+test('assessMetric: temp 50 is fair', () => {
+  assert.equal(assessMetric('temp', 50), 'fair');
 });
 
-test('assessMetric: temp 60 is perfect', () => {
-  assert.equal(assessMetric('temp', 60), 'perfect');
+test('assessMetric: temp 60 is good', () => {
+  assert.equal(assessMetric('temp', 60), 'good');
 });
 
-test('assessMetric: null input returns perfect', () => {
-  assert.equal(assessMetric('temp', null), 'perfect');
+test('assessMetric: temp 40 is rough (boundary)', () => {
+  assert.equal(assessMetric('temp', 40), 'rough');
 });
 
-test('assessMetric: NaN input returns perfect', () => {
-  assert.equal(assessMetric('temp', Number.NaN), 'perfect');
+test('assessMetric: temp 39 is nope', () => {
+  assert.equal(assessMetric('temp', 39), 'nope');
 });
 
-test('assessMetric: undefined input returns perfect', () => {
-  assert.equal(assessMetric('temp', undefined), 'perfect');
+test('assessMetric: temp 95 is rough (boundary)', () => {
+  assert.equal(assessMetric('temp', 95), 'rough');
 });
 
-test('assessMetric: unknown type returns perfect', () => {
-  assert.equal(assessMetric('unknown', 50), 'perfect');
+test('assessMetric: temp 96 is nope', () => {
+  assert.equal(assessMetric('temp', 96), 'nope');
 });
 
-test('assessMetric: wind 10 is perfect', () => {
-  assert.equal(assessMetric('wind', 10), 'perfect');
+test('assessMetric: temp 90 is fair (boundary)', () => {
+  assert.equal(assessMetric('temp', 90), 'fair');
 });
 
-test('assessMetric: wind 11 is tolerable', () => {
-  assert.equal(assessMetric('wind', 11), 'tolerable');
+test('assessMetric: temp 91 is rough (DC humidity)', () => {
+  assert.equal(assessMetric('temp', 91), 'rough');
 });
 
-test('assessMetric: wind 15 is tolerable', () => {
-  assert.equal(assessMetric('wind', 15), 'tolerable');
+test('assessMetric: null input returns good', () => {
+  assert.equal(assessMetric('temp', null), 'good');
 });
 
-test('assessMetric: wind 16 is warning', () => {
-  assert.equal(assessMetric('wind', 16), 'warning');
+test('assessMetric: NaN input returns good', () => {
+  assert.equal(assessMetric('temp', Number.NaN), 'good');
 });
 
-test('assessMetric: AQI 50 is perfect', () => {
-  assert.equal(assessMetric('aqi', 50), 'perfect');
+test('assessMetric: undefined input returns good', () => {
+  assert.equal(assessMetric('temp', undefined), 'good');
 });
 
-test('assessMetric: AQI 51 is tolerable', () => {
-  assert.equal(assessMetric('aqi', 51), 'tolerable');
+test('assessMetric: unknown type returns good', () => {
+  assert.equal(assessMetric('unknown', 50), 'good');
 });
 
-test('assessMetric: AQI 100 is tolerable', () => {
-  assert.equal(assessMetric('aqi', 100), 'tolerable');
+test('assessMetric: wind 10 is good', () => {
+  assert.equal(assessMetric('wind', 10), 'good');
 });
 
-test('assessMetric: AQI 101 is warning', () => {
-  assert.equal(assessMetric('aqi', 101), 'warning');
+test('assessMetric: wind 11 is fair', () => {
+  assert.equal(assessMetric('wind', 11), 'fair');
+});
+
+test('assessMetric: wind 15 is fair', () => {
+  assert.equal(assessMetric('wind', 15), 'fair');
+});
+
+test('assessMetric: wind 16 is rough', () => {
+  assert.equal(assessMetric('wind', 16), 'rough');
+});
+
+test('assessMetric: wind 26 is nope', () => {
+  assert.equal(assessMetric('wind', 26), 'nope');
+});
+
+test('assessMetric: AQI 50 is good', () => {
+  assert.equal(assessMetric('aqi', 50), 'good');
+});
+
+test('assessMetric: AQI 51 is fair', () => {
+  assert.equal(assessMetric('aqi', 51), 'fair');
+});
+
+test('assessMetric: AQI 100 is fair', () => {
+  assert.equal(assessMetric('aqi', 100), 'fair');
+});
+
+test('assessMetric: AQI 101 is rough', () => {
+  assert.equal(assessMetric('aqi', 101), 'rough');
+});
+
+test('assessMetric: AQI 151 is nope', () => {
+  assert.equal(assessMetric('aqi', 151), 'nope');
 });
 
 // ── getClothingItems edge cases ──────────────────────────────────
@@ -329,12 +371,12 @@ test('getClothingItems: exactly 71F matches first CLOTHING_RULES boundary', () =
 
 // ── assessMetric: zero values ─────────────────────────────────────
 
-test('assessMetric: wind 0 is perfect (not ignored)', () => {
-  assert.equal(assessMetric('wind', 0), 'perfect');
+test('assessMetric: wind 0 is good (not ignored)', () => {
+  assert.equal(assessMetric('wind', 0), 'good');
 });
 
-test('assessMetric: AQI 0 is perfect (not ignored)', () => {
-  assert.equal(assessMetric('aqi', 0), 'perfect');
+test('assessMetric: AQI 0 is good (not ignored)', () => {
+  assert.equal(assessMetric('aqi', 0), 'good');
 });
 
 test('getClothingItems: below 30F returns base items with no CLOTHING_RULES match', () => {
