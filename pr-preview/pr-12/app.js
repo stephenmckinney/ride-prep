@@ -353,9 +353,9 @@ function parseLocationInput(input) {
   if (!qualifier) {
     return { city, stateFilter: null };
   }
-  const upper = qualifier.toUpperCase();
-  if (US_STATE_ABBREVS[upper]) {
-    return { city, stateFilter: US_STATE_ABBREVS[upper] };
+  const abbrevKey = qualifier.replace(/[^A-Za-z]/g, '').toUpperCase();
+  if (abbrevKey && US_STATE_ABBREVS[abbrevKey]) {
+    return { city, stateFilter: US_STATE_ABBREVS[abbrevKey] };
   }
   const fullMatch = Object.values(US_STATE_ABBREVS).find(
     (name) => name.toLowerCase() === qualifier.toLowerCase(),
