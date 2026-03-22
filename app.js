@@ -835,34 +835,6 @@ void (() => {
         items: bikeItems,
       });
 
-      sections.push({
-        title: 'Pre-Ride Activation',
-        emoji: '🏋️',
-        items: [
-          { id: 'marching', text: 'Core Single Leg Marching', detail: '1 set' },
-          { id: 'clams', text: 'Clams', detail: '2 sets each side' },
-          {
-            id: 'abduction',
-            text: 'Side Lying Abduction',
-            detail: '2 sets each side',
-          },
-        ],
-      });
-
-      const clothingItems = getClothingItems(tempLow);
-      sections.push({
-        title: 'Clothing',
-        emoji: '\uD83D\uDC55',
-        items: clothingItems,
-      });
-
-      const accessoryItems = getAccessoryItems();
-      sections.push({
-        title: 'Accessories',
-        emoji: '\uD83E\uDD7D',
-        items: accessoryItems,
-      });
-
       const foodItems = [
         {
           id: 'preride',
@@ -890,9 +862,37 @@ void (() => {
         detail: 'Have it ready in the fridge for post-ride',
       });
       sections.push({
-        title: 'Food & Hydration',
+        title: 'Food & Hydration (Night Before)',
         emoji: '\uD83C\uDF6F',
         items: foodItems,
+      });
+
+      sections.push({
+        title: 'Pre-Ride Activation',
+        emoji: '🏋️',
+        items: [
+          { id: 'marching', text: 'Core Single Leg Marching', detail: '1 set' },
+          { id: 'clams', text: 'Clams', detail: '2 sets each side' },
+          {
+            id: 'abduction',
+            text: 'Side Lying Abduction',
+            detail: '2 sets each side',
+          },
+        ],
+      });
+
+      const clothingItems = getClothingItems(tempLow);
+      sections.push({
+        title: 'Clothing',
+        emoji: '\uD83D\uDC55',
+        items: clothingItems,
+      });
+
+      const accessoryItems = getAccessoryItems();
+      sections.push({
+        title: 'Accessories',
+        emoji: '\uD83E\uDD7D',
+        items: accessoryItems,
       });
 
       if (meetup) {
