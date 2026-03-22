@@ -916,12 +916,14 @@ void (() => {
         postRide: true,
         items: [
           { id: 'chain', text: 'Wipe bike chain' },
+          { id: 'shoes', text: 'Clean shoes' },
           {
             id: 'wash',
             text: 'Wash helmet and gloves',
             detail: 'Mild soap and water, air dry',
           },
           { id: 'charge', text: 'Charge bike computer and lights' },
+          { id: 'bottles', text: 'Wash water bottles' },
           {
             id: 'recovery',
             text: 'Recovery shake or balanced meal',
