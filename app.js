@@ -530,7 +530,10 @@ void (() => {
       const header = e.target.closest('.section-header');
       if (header) {
         const section = header.closest('.section');
-        if (section) section.classList.toggle('collapsed');
+        if (section) {
+          section.classList.toggle('collapsed');
+          saveCollapseState();
+        }
       }
     });
 
@@ -587,6 +590,7 @@ void (() => {
             ? 'setup'
             : 'checklist',
           checkState,
+          collapseState,
           weatherData,
           form: getFormValues(),
           savedAt: Date.now(),
@@ -595,6 +599,14 @@ void (() => {
       } catch {
         /* storage full or unavailable */
       }
+    }
+
+    function saveCollapseState() {
+      const sections = els.checklistContainer.querySelectorAll('.section');
+      sections.forEach((sec) => {
+        collapseState[sec.id] = sec.classList.contains('collapsed');
+      });
+      saveState();
     }
 
     function loadState() {
@@ -609,6 +621,7 @@ void (() => {
         if (state.screen === 'checklist') {
           weatherData = state.weatherData || null;
           checkState = state.checkState || {};
+          collapseState = state.collapseState || {};
           generateChecklist(true);
           return true;
         }
@@ -720,6 +733,7 @@ void (() => {
     // ── Checklist State ───────────────────────────────────────────
 
     let checkState = {};
+    let collapseState = {};
     let weatherData = null;
 
     // ── Checklist Generation ──────────────────────────────────────
@@ -969,6 +983,23 @@ void (() => {
       });
 
       els.checklistContainer.innerHTML = html;
+
+      // Apply collapse state: on first load collapse all except Bike Prep,
+      // on restore apply the saved collapse state
+      const sectionEls = els.checklistContainer.querySelectorAll('.section');
+      if (isRestore && Object.keys(collapseState).length) {
+        sectionEls.forEach((sec) => {
+          if (collapseState[sec.id]) sec.classList.add('collapsed');
+        });
+      } else {
+        collapseState = {};
+        sectionEls.forEach((sec) => {
+          const collapsed = sec.id !== 'sec_0';
+          if (collapsed) sec.classList.add('collapsed');
+          collapseState[sec.id] = collapsed;
+        });
+      }
+
       els.setupScreen.classList.add('hidden');
       els.checklistScreen.classList.remove('hidden');
 
