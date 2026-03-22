@@ -472,6 +472,20 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
+// ── Edit ride helpers (pure, testable) ───────────────────────────
+
+// Given the current checkState map and an array of {key, stableKey} pairs
+// (one per rendered checklist item), returns a map of stableKey→true for
+// every item that was checked. Used to seed editPreservedChecks before
+// switching back to the setup screen.
+function buildEditPreservedChecks(checkState, itemKeyPairs) {
+  const result = {};
+  for (const { key, stableKey } of itemKeyPairs) {
+    if (checkState[key]) result[stableKey] = true;
+  }
+  return result;
+}
+
 // ── DOM-dependent code (only runs in browser) ───────────────────
 
 void (() => {
@@ -480,6 +494,7 @@ void (() => {
     if (!$('fetchWeatherBtn')) return; // not on the app page (e.g. test runner)
 
     const PROGRESS_CIRCUMFERENCE = 163.36; // 2 * π * 26
+    const GENERATE_MODE = { FRESH: 'fresh', RESTORE: 'restore', EDIT: 'edit' };
 
     // Gamified progress tiers
     const PROGRESS_TIERS = [
@@ -510,6 +525,8 @@ void (() => {
       weatherStatus: $('weatherStatus'),
       weatherPreview: $('weatherPreview'),
       generateBtn: $('generateBtn'),
+      editBtn: $('editBtn'),
+      editModeBanner: $('editModeBanner'),
       resetBtn: $('resetBtn'),
       rideDate: $('rideDate'),
       rideTime: $('rideTime'),
@@ -580,7 +597,10 @@ void (() => {
 
     // ── Event Delegation ──────────────────────────────────────────
     els.fetchWeatherBtn.addEventListener('click', handleFetchWeather);
-    els.generateBtn.addEventListener('click', () => generateChecklist());
+    els.generateBtn.addEventListener('click', () =>
+      generateChecklist(isEditing ? GENERATE_MODE.EDIT : GENERATE_MODE.FRESH),
+    );
+    els.editBtn.addEventListener('click', handleEditRide);
     els.resetBtn.addEventListener('click', resetAll);
 
     document.addEventListener('click', (e) => {
@@ -685,7 +705,7 @@ void (() => {
           weatherData = state.weatherData || null;
           checkState = state.checkState || {};
           collapseState = state.collapseState || {};
-          generateChecklist(true);
+          generateChecklist(GENERATE_MODE.RESTORE);
           return true;
         }
         return false;
@@ -803,10 +823,12 @@ void (() => {
     let checkState = {};
     let collapseState = {};
     let weatherData = null;
+    let isEditing = false;
+    let editPreservedChecks = null;
 
     // ── Checklist Generation ──────────────────────────────────────
 
-    function generateChecklist(isRestore) {
+    function generateChecklist(mode) {
       const miles = Number.parseFloat(els.rideMiles.value);
       const tempLow = Number.parseFloat(els.rideTempLow.value);
       const tempHigh = Number.parseFloat(els.rideTempHigh.value);
@@ -912,6 +934,7 @@ void (() => {
           detail: `Ride may extend past sunset (${formatTime(sunsetStr)})`,
         });
       sections.push({
+        typeId: 'bike-prep',
         title: 'Bike Prep (Night Before)',
         emoji: '\uD83D\uDD27',
         items: bikeItems,
@@ -944,12 +967,14 @@ void (() => {
         detail: 'Have it ready in the fridge for post-ride',
       });
       sections.push({
+        typeId: 'food-hydration',
         title: 'Food & Hydration (Night Before)',
         emoji: '\uD83C\uDF6F',
         items: foodItems,
       });
 
       sections.push({
+        typeId: 'activation',
         title: 'Pre-Ride Activation',
         emoji: '🏋️',
         items: [
@@ -965,6 +990,7 @@ void (() => {
 
       const clothingItems = getClothingItems(tempLow);
       sections.push({
+        typeId: 'clothing',
         title: 'Clothing',
         emoji: '\uD83D\uDC55',
         items: clothingItems,
@@ -972,6 +998,7 @@ void (() => {
 
       const accessoryItems = getAccessoryItems();
       sections.push({
+        typeId: 'accessories',
         title: 'Accessories',
         emoji: '\uD83E\uDD7D',
         items: accessoryItems,
@@ -979,6 +1006,7 @@ void (() => {
 
       if (meetup) {
         sections.push({
+          typeId: 'meetup',
           title: 'Meetup',
           emoji: '\uD83D\uDC65',
           items: [
@@ -993,6 +1021,7 @@ void (() => {
       }
 
       sections.push({
+        typeId: 'post-ride',
         title: 'Post-Ride',
         emoji: '🧹',
         postRide: true,
@@ -1016,6 +1045,8 @@ void (() => {
       });
 
       // Render checklist items
+      const isRestore = mode === GENERATE_MODE.RESTORE;
+      const isEdit = mode === GENERATE_MODE.EDIT;
       const savedChecks = isRestore ? { ...checkState } : {};
       checkState = {};
       let html = '';
@@ -1027,7 +1058,10 @@ void (() => {
         let itemsHtml = '';
         sec.items.forEach((item, ii) => {
           const key = `${sectionId}_${item.id}_${ii}`;
-          const wasChecked = isRestore && savedChecks[key];
+          const stableKey = `${sec.typeId}__${item.id}`;
+          const wasChecked =
+            (isRestore && savedChecks[key]) ||
+            (isEdit && editPreservedChecks?.[stableKey]);
           checkState[key] = !!wasChecked;
           const checkedClass = wasChecked ? ' checked' : '';
           const detailHtml = item.detail
@@ -1035,7 +1069,7 @@ void (() => {
             : '';
           const postRideAttr = sec.postRide ? ' data-postride' : '';
           itemsHtml += `
-        <div class="item${checkedClass}" data-key="${esc(key)}"${postRideAttr}>
+        <div class="item${checkedClass}" data-key="${esc(key)}" data-stable-key="${esc(stableKey)}"${postRideAttr}>
           <div class="checkbox">${CHECK_SVG}</div>
           <div><div class="item-text">${esc(item.text)}</div>${detailHtml}</div>
         </div>`;
@@ -1089,6 +1123,12 @@ void (() => {
       els.weatherBlock.classList.remove('hidden');
       updateProgress();
       if (!isRestore) saveState();
+      if (isEdit) {
+        editPreservedChecks = null;
+        isEditing = false;
+        els.generateBtn.textContent = 'Generate Checklist';
+        els.editModeBanner.classList.add('hidden');
+      }
     }
 
     function toggleItem(el) {
@@ -1209,11 +1249,29 @@ void (() => {
       }
     }
 
+    function handleEditRide() {
+      const itemKeyPairs = [...document.querySelectorAll('.item')].map(
+        (el) => ({
+          key: el.dataset.key,
+          stableKey: el.dataset.stableKey,
+        }),
+      );
+      editPreservedChecks = buildEditPreservedChecks(checkState, itemKeyPairs);
+
+      isEditing = true;
+      els.generateBtn.textContent = 'Update Checklist';
+      els.editModeBanner.classList.remove('hidden');
+      els.checklistScreen.classList.add('hidden');
+      els.setupScreen.classList.remove('hidden');
+    }
+
     function resetAll() {
       if (confirm('Start a new ride prep?')) {
         clearState();
         checkState = {};
         weatherData = null;
+        isEditing = false;
+        editPreservedChecks = null;
         els.setupScreen.classList.remove('hidden');
         els.checklistScreen.classList.add('hidden');
         els.progressRing.classList.add('hidden');
@@ -1260,6 +1318,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getAccessoryItems,
     parseLocationInput,
     filterGeocodingResults,
+    buildEditPreservedChecks,
     US_STATE_ABBREVS,
     COLD_THRESHOLD,
     COOL_THRESHOLD,
