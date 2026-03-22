@@ -593,7 +593,10 @@ void (() => {
       const header = e.target.closest('.section-header');
       if (header) {
         const section = header.closest('.section');
-        if (section) section.classList.toggle('collapsed');
+        if (section) {
+          section.classList.toggle('collapsed');
+          saveCollapseState();
+        }
       }
     });
 
@@ -650,6 +653,7 @@ void (() => {
             ? 'setup'
             : 'checklist',
           checkState,
+          collapseState,
           weatherData,
           form: getFormValues(),
           savedAt: Date.now(),
@@ -658,6 +662,14 @@ void (() => {
       } catch {
         /* storage full or unavailable */
       }
+    }
+
+    function saveCollapseState() {
+      const sections = els.checklistContainer.querySelectorAll('.section');
+      sections.forEach((sec) => {
+        collapseState[sec.id] = sec.classList.contains('collapsed');
+      });
+      saveState();
     }
 
     function loadState() {
@@ -672,6 +684,7 @@ void (() => {
         if (state.screen === 'checklist') {
           weatherData = state.weatherData || null;
           checkState = state.checkState || {};
+          collapseState = state.collapseState || {};
           generateChecklist(true);
           return true;
         }
@@ -788,6 +801,7 @@ void (() => {
     // ── Checklist State ───────────────────────────────────────────
 
     let checkState = {};
+    let collapseState = {};
     let weatherData = null;
 
     // ── Checklist Generation ──────────────────────────────────────
@@ -903,6 +917,38 @@ void (() => {
         items: bikeItems,
       });
 
+      const foodItems = [
+        {
+          id: 'preride',
+          text: 'Pre-ride meal',
+          detail:
+            'Oatmeal + berries or cereal + fruit \u2014 eat 1\u20132 hrs before',
+        },
+        {
+          id: 'waffles',
+          text: `Pack ${waffles} Honey Stinger Waffle${waffles > 1 ? 's' : ''}`,
+          detail: `${waffles} waffle${waffles > 1 ? 's' : ''} for ~${hours} hr ride`,
+        },
+        { id: 'bottles', text: 'Fill 2 bottles with Skratch mix' },
+      ];
+      if (extraBags > 0) {
+        foodItems.push({
+          id: 'bags',
+          text: `Pack ${extraBags} Ziploc bag${extraBags > 1 ? 's' : ''} of Skratch mix`,
+          detail: `${2 + extraBags} total bottles for ~${hours} hr ride`,
+        });
+      }
+      foodItems.push({
+        id: 'recovery',
+        text: 'Prep Skratch Chocolate Recovery Shake',
+        detail: 'Have it ready in the fridge for post-ride',
+      });
+      sections.push({
+        title: 'Food & Hydration (Night Before)',
+        emoji: '\uD83C\uDF6F',
+        items: foodItems,
+      });
+
       sections.push({
         title: 'Pre-Ride Activation',
         emoji: '🏋️',
@@ -931,38 +977,6 @@ void (() => {
         items: accessoryItems,
       });
 
-      const foodItems = [
-        {
-          id: 'preride',
-          text: 'Pre-ride meal',
-          detail:
-            'Oatmeal + berries or cereal + fruit \u2014 eat 1\u20132 hrs before',
-        },
-        {
-          id: 'waffles',
-          text: `Pack ${waffles} Honey Stinger Waffle${waffles > 1 ? 's' : ''}`,
-          detail: `${waffles} waffle${waffles > 1 ? 's' : ''} for ~${hours} hr ride`,
-        },
-        { id: 'bottles', text: 'Fill 2 bottles with Skratch mix' },
-      ];
-      if (extraBags > 0) {
-        foodItems.push({
-          id: 'bags',
-          text: `Pack ${extraBags} Ziploc bag${extraBags > 1 ? 's' : ''} of Skratch mix`,
-          detail: `${2 + extraBags} total bottles for ~${hours} hr ride`,
-        });
-      }
-      foodItems.push({
-        id: 'recovery',
-        text: 'Prep Skratch Chocolate Recovery Shake',
-        detail: 'Have it ready in the fridge for post-ride',
-      });
-      sections.push({
-        title: 'Food & Hydration',
-        emoji: '\uD83C\uDF6F',
-        items: foodItems,
-      });
-
       if (meetup) {
         sections.push({
           title: 'Meetup',
@@ -984,12 +998,14 @@ void (() => {
         postRide: true,
         items: [
           { id: 'chain', text: 'Wipe bike chain' },
+          { id: 'shoes', text: 'Clean shoes' },
           {
             id: 'wash',
             text: 'Wash helmet and gloves',
             detail: 'Mild soap and water, air dry',
           },
           { id: 'charge', text: 'Charge bike computer and lights' },
+          { id: 'bottles', text: 'Wash water bottles' },
           {
             id: 'recovery',
             text: 'Recovery shake or balanced meal',
@@ -1035,6 +1051,23 @@ void (() => {
       });
 
       els.checklistContainer.innerHTML = html;
+
+      // Apply collapse state: on first load collapse all except Bike Prep,
+      // on restore apply the saved collapse state
+      const sectionEls = els.checklistContainer.querySelectorAll('.section');
+      if (isRestore && Object.keys(collapseState).length) {
+        sectionEls.forEach((sec) => {
+          if (collapseState[sec.id]) sec.classList.add('collapsed');
+        });
+      } else {
+        collapseState = {};
+        sectionEls.forEach((sec) => {
+          const collapsed = sec.id !== 'sec_0';
+          if (collapsed) sec.classList.add('collapsed');
+          collapseState[sec.id] = collapsed;
+        });
+      }
+
       els.setupScreen.classList.add('hidden');
       els.checklistScreen.classList.remove('hidden');
 
