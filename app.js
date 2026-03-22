@@ -835,6 +835,38 @@ void (() => {
         items: bikeItems,
       });
 
+      const foodItems = [
+        {
+          id: 'preride',
+          text: 'Pre-ride meal',
+          detail:
+            'Oatmeal + berries or cereal + fruit \u2014 eat 1\u20132 hrs before',
+        },
+        {
+          id: 'waffles',
+          text: `Pack ${waffles} Honey Stinger Waffle${waffles > 1 ? 's' : ''}`,
+          detail: `${waffles} waffle${waffles > 1 ? 's' : ''} for ~${hours} hr ride`,
+        },
+        { id: 'bottles', text: 'Fill 2 bottles with Skratch mix' },
+      ];
+      if (extraBags > 0) {
+        foodItems.push({
+          id: 'bags',
+          text: `Pack ${extraBags} Ziploc bag${extraBags > 1 ? 's' : ''} of Skratch mix`,
+          detail: `${2 + extraBags} total bottles for ~${hours} hr ride`,
+        });
+      }
+      foodItems.push({
+        id: 'recovery',
+        text: 'Prep Skratch Chocolate Recovery Shake',
+        detail: 'Have it ready in the fridge for post-ride',
+      });
+      sections.push({
+        title: 'Food & Hydration (Night Before)',
+        emoji: '\uD83C\uDF6F',
+        items: foodItems,
+      });
+
       sections.push({
         title: 'Pre-Ride Activation',
         emoji: '🏋️',
@@ -863,38 +895,6 @@ void (() => {
         items: accessoryItems,
       });
 
-      const foodItems = [
-        {
-          id: 'preride',
-          text: 'Pre-ride meal',
-          detail:
-            'Oatmeal + berries or cereal + fruit \u2014 eat 1\u20132 hrs before',
-        },
-        {
-          id: 'waffles',
-          text: `Pack ${waffles} Honey Stinger Waffle${waffles > 1 ? 's' : ''}`,
-          detail: `${waffles} waffle${waffles > 1 ? 's' : ''} for ~${hours} hr ride`,
-        },
-        { id: 'bottles', text: 'Fill 2 bottles with Skratch mix' },
-      ];
-      if (extraBags > 0) {
-        foodItems.push({
-          id: 'bags',
-          text: `Pack ${extraBags} Ziploc bag${extraBags > 1 ? 's' : ''} of Skratch mix`,
-          detail: `${2 + extraBags} total bottles for ~${hours} hr ride`,
-        });
-      }
-      foodItems.push({
-        id: 'recovery',
-        text: 'Prep Skratch Chocolate Recovery Shake',
-        detail: 'Have it ready in the fridge for post-ride',
-      });
-      sections.push({
-        title: 'Food & Hydration',
-        emoji: '\uD83C\uDF6F',
-        items: foodItems,
-      });
-
       if (meetup) {
         sections.push({
           title: 'Meetup',
@@ -916,12 +916,14 @@ void (() => {
         postRide: true,
         items: [
           { id: 'chain', text: 'Wipe bike chain' },
+          { id: 'shoes', text: 'Clean shoes' },
           {
             id: 'wash',
             text: 'Wash helmet and gloves',
             detail: 'Mild soap and water, air dry',
           },
           { id: 'charge', text: 'Charge bike computer and lights' },
+          { id: 'bottles', text: 'Wash water bottles' },
           {
             id: 'recovery',
             text: 'Recovery shake or balanced meal',

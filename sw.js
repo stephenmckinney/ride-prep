@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ride-prep-184842a';
+const CACHE_NAME = 'ride-prep-83aa839';
 const ASSETS = [
   './',
   './index.html',
