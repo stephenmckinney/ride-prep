@@ -349,7 +349,10 @@ function parseLocationInput(input) {
     return { city: parts[0], stateFilter: null };
   }
   const city = parts[0];
-  const qualifier = parts.slice(1).join(',').trim();
+  const qualifier = parts[1].trim();
+  if (!qualifier) {
+    return { city, stateFilter: null };
+  }
   const upper = qualifier.toUpperCase();
   if (US_STATE_ABBREVS[upper]) {
     return { city, stateFilter: US_STATE_ABBREVS[upper] };
