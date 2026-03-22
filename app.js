@@ -541,6 +541,7 @@ void (() => {
 
     els.locateBtn.addEventListener('click', () => {
       if (!navigator.geolocation) return;
+      if (els.locateBtn.classList.contains('locating')) return;
       els.locateBtn.classList.add('locating');
 
       navigator.geolocation.getCurrentPosition(
@@ -549,11 +550,13 @@ void (() => {
           const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
           const { city, state } = await reverseGeocode(latitude, longitude);
 
-          const cityName = city || 'Current Location';
+          const cityName = city || '';
           const admin1 = state || '';
-          const displayName = admin1 ? `${cityName}, ${admin1}` : cityName;
+          if (cityName) {
+            const displayName = admin1 ? `${cityName}, ${admin1}` : cityName;
+            els.rideLocation.value = displayName;
+          }
 
-          els.rideLocation.value = displayName;
           pendingGeoCoords = {
             latitude,
             longitude,
@@ -721,7 +724,6 @@ void (() => {
         let geo;
         if (pendingGeoCoords) {
           geo = pendingGeoCoords;
-          pendingGeoCoords = null;
         } else {
           geo = await geocodeLocation(location);
         }
