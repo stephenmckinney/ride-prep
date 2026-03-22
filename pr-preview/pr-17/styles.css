@@ -476,12 +476,16 @@ body {
   background: transparent;
   color: var(--text-muted);
   border: 1px solid transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 40%, transparent);
   margin-top: 10px;
 }
 
 .btn-ghost:active {
   color: var(--text);
   border-color: var(--border);
+  text-decoration-color: var(--text-muted);
 }
 
 .edit-mode-banner {
