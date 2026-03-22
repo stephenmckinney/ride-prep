@@ -1120,7 +1120,7 @@ void (() => {
         els.weatherBlock.classList.add('hidden');
         els.headerTitle.textContent = 'Ride Prep';
         els.headerDatetime.textContent = "Get ready for tomorrow's ride";
-        els.rideMiles.value = '';
+        els.rideMiles.value = '30';
         els.rideTempLow.value = '';
         els.rideTempHigh.value = '';
         els.rideWind.value = '';
