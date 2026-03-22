@@ -26,8 +26,9 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    "Helvetica Neue", sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+    sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -126,7 +127,9 @@ body {
   stroke-linecap: round;
   stroke-dasharray: 163.36;
   stroke-dashoffset: 163.36;
-  transition: stroke-dashoffset 0.5s ease, stroke 0.4s ease;
+  transition:
+    stroke-dashoffset 0.5s ease,
+    stroke 0.4s ease;
 }
 
 .progress-ring__label {
@@ -152,7 +155,9 @@ body {
   font-size: 9px;
   color: var(--text-muted);
   line-height: 1;
-  transition: color 0.4s ease, font-size 0.3s ease;
+  transition:
+    color 0.4s ease,
+    font-size 0.3s ease;
 }
 
 /* Bounce pop on tier change */
@@ -558,12 +563,12 @@ body {
   transform: rotate(-90deg);
 }
 
-.section.collapsed .section-items {
-  display: none;
-}
-
 .section-items {
   border-top: 1px solid var(--border);
+}
+
+.section.collapsed .section-items {
+  display: none;
 }
 
 .item {
@@ -583,11 +588,6 @@ body {
 
 .item:active {
   background: var(--surface-hover);
-}
-
-.item.checked .item-text {
-  color: var(--text-muted);
-  text-decoration: line-through;
 }
 
 .checkbox {
@@ -620,6 +620,11 @@ body {
 .item-text {
   font-size: 15px;
   line-height: 1.4;
+}
+
+.item.checked .item-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
 }
 
 .item-detail {
