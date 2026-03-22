@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ride Prep">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Bike ride preparation checklist with live weather">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Ride Prep</title>
+</head>
+
+<body>
+
+  <div class="ride-header" id="rideHeader">
+    <div class="ride-header__top">
+      <div class="ride-header__info">
+        <h1 class="ride-header__title" id="headerTitle">Ride Prep</h1>
+        <p class="ride-header__datetime" id="headerDatetime">Get ready for tomorrow's ride</p>
+        <div class="ride-header__meta hidden" id="headerMeta"></div>
+      </div>
+      <div class="progress-ring hidden" id="progressRing">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <circle class="progress-ring__track" cx="32" cy="32" r="26" />
+          <circle class="progress-ring__fill" cx="32" cy="32" r="26" id="progressFill" />
+        </svg>
+        <div class="progress-ring__label">
+          <span class="progress-ring__pct" id="progressPct">0%</span>
+          <span class="progress-ring__sub">done</span>
+        </div>
+      </div>
+    </div>
+    <div class="weather-block hidden" id="weatherBlock">
+      <div class="weather-block__header">
+        <span class="weather-block__condition" id="weatherCondition"></span>
+        <span class="weather-block__location" id="weatherLocation"></span>
+      </div>
+      <div class="weather-block__strip" id="weatherStrip"></div>
+    </div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div id="setupScreen" class="setup">
+    <h2>Plan Your Ride</h2>
+
+    <div class="field">
+      <label>Ride Date</label>
+      <input type="date" id="rideDate">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Start Time</label>
+        <input type="time" id="rideTime" value="09:00">
+      </div>
+      <div class="field">
+        <label>Miles</label>
+        <input type="number" id="rideMiles" placeholder="e.g. 40" value="30" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Location</label>
+      <div class="location-row">
+        <input type="text" id="rideLocation" value="Washington, District of Columbia">
+        <button type="button" class="btn-locate" id="locateBtn" title="Use current location" aria-label="Use current location">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+            <circle cx="8" cy="8" r="3"/>
+            <line x1="8" y1="1" x2="8" y2="3"/>
+            <line x1="8" y1="13" x2="8" y2="15"/>
+            <line x1="1" y1="8" x2="3" y2="8"/>
+            <line x1="13" y1="8" x2="15" y2="8"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Bike</label>
+      <select id="rideBike">
+        <option value="caledonia">Cervélo Caledonia-5 (Road)</option>
+        <option value="r3">Cervélo R3 (Road)</option>
+        <option value="cx">Open UP 700C (CX)</option>
+        <option value="gravel">Open UP 650B (Gravel)</option>
+        <option value="mtb">Ripley MTB</option>
+      </select>
+    </div>
+
+    <hr class="divider">
+    <div class="section-label">Weather</div>
+
+    <button type="button" class="btn-weather" id="fetchWeatherBtn">Fetch Weather for Ride Day</button>
+    <div class="weather-status" id="weatherStatus"></div>
+
+    <div class="weather-preview" id="weatherPreview">
+      <div class="wp-grid">
+        <div class="wp-item">
+          <div class="wp-val" id="wpTemp">--</div>
+          <div class="wp-label">Temp range °F</div>
+        </div>
+        <div class="wp-item">
+          <div class="wp-val" id="wpWind">--</div>
+          <div class="wp-label">Max wind MPH</div>
+        </div>
+        <div class="wp-item">
+          <div class="wp-val" id="wpAqi">--</div>
+          <div class="wp-label">Max AQI</div>
+        </div>
+      </div>
+      <div class="wp-row2">
+        <div class="wp-item">
+          <div class="wp-val" id="wpHumidity">--</div>
+          <div class="wp-label">Max humidity</div>
+        </div>
+        <div class="wp-item">
+          <div class="wp-val" id="wpSunset">--</div>
+          <div class="wp-label">Sunset</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;text-align:center;">
+        <div class="wp-item">
+          <div class="wp-val" id="wpPrecip">--</div>
+          <div class="wp-label">Max rain chance</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Low °F</label>
+        <input type="number" id="rideTempLow" placeholder="auto-filled" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>High °F</label>
+        <input type="number" id="rideTempHigh" placeholder="auto-filled" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Max Wind MPH</label>
+        <input type="number" id="rideWind" placeholder="auto-filled" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Max AQI</label>
+        <input type="number" id="rideAqi" placeholder="auto-filled" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Sunset</label>
+        <input type="time" id="rideSunset" value="18:30">
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="section-label">Details</div>
+
+    <div class="field">
+      <label>Meeting someone? (optional)</label>
+      <input type="text" id="rideMeetup" placeholder="e.g. Coffee shop at 8:30 AM">
+    </div>
+
+    <div class="field">
+      <label>Need a lock? (urban ride with stops)</label>
+      <select id="rideLock">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
+
+    <div id="editModeBanner" class="edit-mode-banner hidden">Editing current ride — your progress will be preserved</div>
+    <button type="button" class="btn btn-primary" id="generateBtn">Generate Checklist</button>
+  </div>
+
+  <!-- CHECKLIST SCREEN -->
+  <div id="checklistScreen" class="hidden">
+    <div class="checklist" id="checklistContainer"></div>
+    <div class="footer-actions">
+      <button type="button" class="btn btn-ghost" id="editBtn">Edit Ride</button>
+      <button type="button" class="btn btn-secondary" id="resetBtn">New Ride</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
