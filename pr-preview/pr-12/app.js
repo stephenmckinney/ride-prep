@@ -756,7 +756,6 @@ void (() => {
       // Assess using worst-case: lowest temp, highest wind/AQI
       const weather = assessWeather(tempLow, wind, aqi);
 
-      const _humidity = weatherData ? `${weatherData.humidityMax}%` : '\u2014';
       const precipChance = weatherData ? `${weatherData.precipMax}%` : '\u2014';
       const locationName = weatherData ? weatherData.locationName : location;
 
