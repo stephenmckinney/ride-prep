@@ -472,6 +472,20 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
+// ── Edit ride helpers (pure, testable) ───────────────────────────
+
+// Given the current checkState map and an array of {key, stableKey} pairs
+// (one per rendered checklist item), returns a map of stableKey→true for
+// every item that was checked. Used to seed editPreservedChecks before
+// switching back to the setup screen.
+function buildEditPreservedChecks(checkState, itemKeyPairs) {
+  const result = {};
+  for (const { key, stableKey } of itemKeyPairs) {
+    if (checkState[key]) result[stableKey] = true;
+  }
+  return result;
+}
+
 // ── DOM-dependent code (only runs in browser) ───────────────────
 
 void (() => {
@@ -1236,12 +1250,13 @@ void (() => {
     }
 
     function handleEditRide() {
-      editPreservedChecks = {};
-      document.querySelectorAll('.item').forEach((el) => {
-        if (checkState[el.dataset.key]) {
-          editPreservedChecks[el.dataset.stableKey] = true;
-        }
-      });
+      const itemKeyPairs = [...document.querySelectorAll('.item')].map(
+        (el) => ({
+          key: el.dataset.key,
+          stableKey: el.dataset.stableKey,
+        }),
+      );
+      editPreservedChecks = buildEditPreservedChecks(checkState, itemKeyPairs);
 
       isEditing = true;
       els.generateBtn.textContent = 'Update Checklist';
@@ -1303,6 +1318,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getAccessoryItems,
     parseLocationInput,
     filterGeocodingResults,
+    buildEditPreservedChecks,
     US_STATE_ABBREVS,
     COLD_THRESHOLD,
     COOL_THRESHOLD,

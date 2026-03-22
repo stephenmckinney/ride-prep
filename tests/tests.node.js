@@ -12,6 +12,7 @@ const {
   getAccessoryItems,
   parseLocationInput,
   filterGeocodingResults,
+  buildEditPreservedChecks,
 } = require('../app.js');
 
 function findItem(items, id) {
@@ -645,6 +646,122 @@ test('filterGeocodingResults: suggestions exclude results without admin1', () =>
       return true;
     },
   );
+});
+
+// ── buildEditPreservedChecks ─────────────────────────────────────
+
+test('buildEditPreservedChecks: checked items are preserved by stable key', () => {
+  const checkState = { sec_0_wahoo_0: true, sec_0_lights_1: false };
+  const pairs = [
+    { key: 'sec_0_wahoo_0', stableKey: 'bike-prep__wahoo' },
+    { key: 'sec_0_lights_1', stableKey: 'bike-prep__lights' },
+  ];
+  const result = buildEditPreservedChecks(checkState, pairs);
+  assert.equal(result['bike-prep__wahoo'], true);
+  assert.equal(result['bike-prep__lights'], undefined);
+});
+
+test('buildEditPreservedChecks: unchecked items are absent from result', () => {
+  const checkState = { sec_0_wahoo_0: false, sec_0_chain_2: false };
+  const pairs = [
+    { key: 'sec_0_wahoo_0', stableKey: 'bike-prep__wahoo' },
+    { key: 'sec_0_chain_2', stableKey: 'bike-prep__chain' },
+  ];
+  const result = buildEditPreservedChecks(checkState, pairs);
+  assert.deepEqual(result, {});
+});
+
+test('buildEditPreservedChecks: all checked returns all stable keys', () => {
+  const checkState = {
+    sec_0_wahoo_0: true,
+    sec_3_bibs_1: true,
+    sec_4_helmet_0: true,
+  };
+  const pairs = [
+    { key: 'sec_0_wahoo_0', stableKey: 'bike-prep__wahoo' },
+    { key: 'sec_3_bibs_1', stableKey: 'clothing__bibs' },
+    { key: 'sec_4_helmet_0', stableKey: 'accessories__helmet' },
+  ];
+  const result = buildEditPreservedChecks(checkState, pairs);
+  assert.deepEqual(result, {
+    'bike-prep__wahoo': true,
+    clothing__bibs: true,
+    accessories__helmet: true,
+  });
+});
+
+test('buildEditPreservedChecks: empty checkState returns empty result', () => {
+  const pairs = [{ key: 'sec_0_wahoo_0', stableKey: 'bike-prep__wahoo' }];
+  const result = buildEditPreservedChecks({}, pairs);
+  assert.deepEqual(result, {});
+});
+
+test('buildEditPreservedChecks: empty item pairs returns empty result', () => {
+  const checkState = { sec_0_wahoo_0: true };
+  const result = buildEditPreservedChecks(checkState, []);
+  assert.deepEqual(result, {});
+});
+
+test('buildEditPreservedChecks: same item.id in different sections get distinct stable keys', () => {
+  // 'chain' exists in bike-prep and post-ride; 'bottles' in food-hydration and post-ride
+  const checkState = {
+    sec_0_chain_2: true, // bike-prep chain (checked)
+    sec_6_chain_0: false, // post-ride chain (unchecked)
+    sec_1_bottles_2: true, // food-hydration bottles (checked)
+    sec_6_bottles_4: true, // post-ride bottles (checked)
+  };
+  const pairs = [
+    { key: 'sec_0_chain_2', stableKey: 'bike-prep__chain' },
+    { key: 'sec_6_chain_0', stableKey: 'post-ride__chain' },
+    { key: 'sec_1_bottles_2', stableKey: 'food-hydration__bottles' },
+    { key: 'sec_6_bottles_4', stableKey: 'post-ride__bottles' },
+  ];
+  const result = buildEditPreservedChecks(checkState, pairs);
+  assert.equal(result['bike-prep__chain'], true, 'bike-prep chain was checked');
+  assert.equal(
+    result['post-ride__chain'],
+    undefined,
+    'post-ride chain was not checked',
+  );
+  assert.equal(
+    result['food-hydration__bottles'],
+    true,
+    'food-hydration bottles was checked',
+  );
+  assert.equal(
+    result['post-ride__bottles'],
+    true,
+    'post-ride bottles was checked',
+  );
+});
+
+test('buildEditPreservedChecks: positional index shift does not affect stable key', () => {
+  // Simulates meetup section being added: post-ride shifts from sec_5 to sec_6,
+  // but its stable key stays 'post-ride__*'. After the edit, the new checklist
+  // generates post-ride at sec_6 — stable key still matches.
+  const checkState = { sec_5_shower_6: true }; // old post-ride at sec_5
+  const pairs = [{ key: 'sec_5_shower_6', stableKey: 'post-ride__shower' }];
+  const result = buildEditPreservedChecks(checkState, pairs);
+  assert.equal(result['post-ride__shower'], true);
+
+  // After regeneration with meetup added, post-ride is now sec_6. The new
+  // item's stableKey is still 'post-ride__shower', so it matches.
+  const newStableKey = 'post-ride__shower';
+  assert.equal(
+    result[newStableKey],
+    true,
+    'stable key survives section index shift',
+  );
+});
+
+test('buildEditPreservedChecks: new items absent from preserved checks remain unchecked', () => {
+  // extralights is a conditional item added when riding after dark.
+  // If it didn't exist in the original checklist, it won't be in preserved checks.
+  const checkState = { sec_0_wahoo_0: true };
+  const pairs = [{ key: 'sec_0_wahoo_0', stableKey: 'bike-prep__wahoo' }];
+  const result = buildEditPreservedChecks(checkState, pairs);
+  // extralights was not in the original checklist — not in result
+  assert.equal(result['bike-prep__extralights'], undefined);
 });
 
 test('filterGeocodingResults: suggestions capped at 5', () => {
