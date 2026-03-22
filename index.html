@@ -60,7 +60,7 @@
       </div>
       <div class="field">
         <label>Miles</label>
-        <input type="number" id="rideMiles" placeholder="e.g. 40" inputmode="numeric">
+        <input type="number" id="rideMiles" placeholder="e.g. 40" value="30" inputmode="numeric">
       </div>
     </div>
 
@@ -83,7 +83,7 @@
     <hr class="divider">
     <div class="section-label">Weather</div>
 
-    <button class="btn-weather" id="fetchWeatherBtn">Fetch Weather for Ride Day</button>
+    <button type="button" class="btn-weather" id="fetchWeatherBtn">Fetch Weather for Ride Day</button>
     <div class="weather-status" id="weatherStatus"></div>
 
     <div class="weather-preview" id="weatherPreview">
@@ -164,14 +164,14 @@
       </select>
     </div>
 
-    <button class="btn btn-primary" id="generateBtn">Generate Checklist</button>
+    <button type="button" class="btn btn-primary" id="generateBtn">Generate Checklist</button>
   </div>
 
   <!-- CHECKLIST SCREEN -->
   <div id="checklistScreen" class="hidden">
     <div class="checklist" id="checklistContainer"></div>
     <div class="footer-actions">
-      <button class="btn btn-secondary" id="resetBtn">New Ride</button>
+      <button type="button" class="btn btn-secondary" id="resetBtn">New Ride</button>
     </div>
   </div>
 
