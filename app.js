@@ -283,22 +283,126 @@ function getAccessoryItems() {
   ];
 }
 
+// ── Location parsing ────────────────────────────────────────────
+
+const US_STATE_ABBREVS = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  FL: 'Florida',
+  GA: 'Georgia',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PA: 'Pennsylvania',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+  DC: 'District of Columbia',
+};
+
+/**
+ * Parse user input like "Pittsburgh, PA" or "Pittsburgh, Pennsylvania"
+ * into { city, stateFilter } where stateFilter is the full state name or null.
+ */
+function parseLocationInput(input) {
+  const parts = input.split(',').map((p) => p.trim());
+  if (parts.length < 2 || !parts[1]) {
+    return { city: parts[0], stateFilter: null };
+  }
+  const city = parts[0];
+  const qualifier = parts[1].trim();
+  if (!qualifier) {
+    return { city, stateFilter: null };
+  }
+  const abbrevKey = qualifier.replace(/[^A-Za-z]/g, '').toUpperCase();
+  if (abbrevKey && US_STATE_ABBREVS[abbrevKey]) {
+    return { city, stateFilter: US_STATE_ABBREVS[abbrevKey] };
+  }
+  const fullMatch = Object.values(US_STATE_ABBREVS).find(
+    (name) => name.toLowerCase() === qualifier.toLowerCase(),
+  );
+  if (fullMatch) {
+    return { city, stateFilter: fullMatch };
+  }
+  return { city, stateFilter: qualifier };
+}
+
+/**
+ * Given geocoding results, apply the optional state filter and return the best
+ * match. Throws descriptive errors when no results exist or when the state
+ * filter doesn't match any result.
+ */
+function filterGeocodingResults(results, city, stateFilter) {
+  if (!results || results.length === 0) {
+    throw new Error(`Could not find "${city}". Try a different city name.`);
+  }
+  if (!stateFilter) {
+    return results[0];
+  }
+  const match = results.find(
+    (r) => r.admin1 && r.admin1.toLowerCase() === stateFilter.toLowerCase(),
+  );
+  if (match) {
+    return match;
+  }
+  const names = results
+    .filter((r) => r.admin1)
+    .map((r) => `${r.name}, ${r.admin1}`)
+    .slice(0, 5)
+    .join('; ');
+  throw new Error(
+    `Could not find "${city}" in ${stateFilter}. Did you mean: ${names || 'N/A'}?`,
+  );
+}
+
 // ── Weather API ─────────────────────────────────────────────────
 
 async function geocodeLocation(name) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`;
+  const { city, stateFilter } = parseLocationInput(name);
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=10&language=en&format=json`;
   const res = await fetch(url);
   const data = await res.json();
-  if (!data.results || data.results.length === 0) {
-    throw new Error(`Could not find "${name}". Try a more specific city name.`);
-  }
-  const {
-    latitude,
-    longitude,
-    timezone,
-    name: cityName,
-    admin1,
-  } = data.results[0];
+  const match = filterGeocodingResults(data.results, city, stateFilter);
+  const { latitude, longitude, timezone, name: cityName, admin1 } = match;
   return { latitude, longitude, timezone, cityName, admin1 };
 }
 
@@ -346,7 +450,7 @@ async function fetchAqi(lat, lon, tz, date, startHourIndex, endHourIndex) {
       }
       return max;
     }
-  } catch (e) {
+  } catch {
     /* best-effort */
   }
   return null;
@@ -548,7 +652,7 @@ void (() => {
           savedAt: Date.now(),
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
+      } catch {
         /* storage full or unavailable */
       }
     }
@@ -569,7 +673,7 @@ void (() => {
           return true;
         }
         return false;
-      } catch (e) {
+      } catch {
         return false;
       }
     }
@@ -577,7 +681,7 @@ void (() => {
     function clearState() {
       try {
         localStorage.removeItem(STORAGE_KEY);
-      } catch (e) {}
+      } catch {}
     }
 
     // ── Weather UI ────────────────────────────────────────────────
@@ -726,7 +830,6 @@ void (() => {
       // Assess using worst-case: lowest temp, highest wind/AQI
       const weather = assessWeather(tempLow, wind, aqi);
 
-      const humidity = weatherData ? `${weatherData.humidityMax}%` : '\u2014';
       const precipChance = weatherData ? `${weatherData.precipMax}%` : '\u2014';
       const locationName = weatherData ? weatherData.locationName : location;
 
@@ -1083,7 +1186,7 @@ void (() => {
         els.weatherBlock.classList.add('hidden');
         els.headerTitle.textContent = 'Ride Prep';
         els.headerDatetime.textContent = "Get ready for tomorrow's ride";
-        els.rideMiles.value = '';
+        els.rideMiles.value = '30';
         els.rideTempLow.value = '';
         els.rideTempHigh.value = '';
         els.rideWind.value = '';
@@ -1120,6 +1223,9 @@ if (typeof module !== 'undefined' && module.exports) {
     extractWeatherRange,
     getClothingItems,
     getAccessoryItems,
+    parseLocationInput,
+    filterGeocodingResults,
+    US_STATE_ABBREVS,
     COLD_THRESHOLD,
     COOL_THRESHOLD,
     AVG_SPEED_MPH,

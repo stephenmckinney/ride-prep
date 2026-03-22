@@ -10,6 +10,8 @@ const {
   extractWeatherRange,
   getClothingItems,
   getAccessoryItems,
+  parseLocationInput,
+  filterGeocodingResults,
 } = require('../app.js');
 
 function findItem(items, id) {
@@ -504,4 +506,160 @@ test('extractWeatherRange: empty arrays return NaN', () => {
   const range = extractWeatherRange([], [], [], [], 0, 0);
   assert.equal(Number.isNaN(range.tempLow), true);
   assert.equal(Number.isNaN(range.tempHigh), true);
+});
+
+// ── parseLocationInput ─────────────────────────────────────────
+
+test('parseLocationInput: plain city returns city with no filter', () => {
+  const result = parseLocationInput('Pittsburgh');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, null);
+});
+
+test('parseLocationInput: city with state abbreviation', () => {
+  const result = parseLocationInput('Pittsburgh, PA');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: city with lowercase state abbreviation', () => {
+  const result = parseLocationInput('Pittsburgh, pa');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: city with full state name', () => {
+  const result = parseLocationInput('Pittsburgh, Pennsylvania');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: city with mixed-case state name', () => {
+  const result = parseLocationInput('Austin, texas');
+  assert.equal(result.city, 'Austin');
+  assert.equal(result.stateFilter, 'Texas');
+});
+
+test('parseLocationInput: DC abbreviation', () => {
+  const result = parseLocationInput('Washington, DC');
+  assert.equal(result.city, 'Washington');
+  assert.equal(result.stateFilter, 'District of Columbia');
+});
+
+test('parseLocationInput: non-US qualifier passes through', () => {
+  const result = parseLocationInput('London, England');
+  assert.equal(result.city, 'London');
+  assert.equal(result.stateFilter, 'England');
+});
+
+test('parseLocationInput: trims whitespace', () => {
+  const result = parseLocationInput('  Pittsburgh ,  PA  ');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: empty qualifier treated as plain city', () => {
+  const result = parseLocationInput('Pittsburgh,');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, null);
+});
+
+// ── filterGeocodingResults ──────────────────────────────────────
+
+const mockResults = [
+  {
+    name: 'Portland',
+    admin1: 'Oregon',
+    latitude: 45.52,
+    longitude: -122.67,
+    timezone: 'America/Los_Angeles',
+  },
+  {
+    name: 'Portland',
+    admin1: 'Maine',
+    latitude: 43.66,
+    longitude: -70.26,
+    timezone: 'America/New_York',
+  },
+  {
+    name: 'Portland',
+    admin1: 'Indiana',
+    latitude: 40.43,
+    longitude: -84.98,
+    timezone: 'America/Indiana/Indianapolis',
+  },
+];
+
+test('filterGeocodingResults: no filter returns first result', () => {
+  const result = filterGeocodingResults(mockResults, 'Portland', null);
+  assert.equal(result.admin1, 'Oregon');
+});
+
+test('filterGeocodingResults: state filter selects matching result', () => {
+  const result = filterGeocodingResults(mockResults, 'Portland', 'Maine');
+  assert.equal(result.admin1, 'Maine');
+});
+
+test('filterGeocodingResults: state filter is case-insensitive', () => {
+  const result = filterGeocodingResults(mockResults, 'Portland', 'OREGON');
+  assert.equal(result.admin1, 'Oregon');
+});
+
+test('filterGeocodingResults: throws when no results at all', () => {
+  assert.throws(() => filterGeocodingResults([], 'Nowhere', null), {
+    message: /Could not find "Nowhere"/,
+  });
+});
+
+test('filterGeocodingResults: throws when results is null/undefined', () => {
+  assert.throws(() => filterGeocodingResults(null, 'Nowhere', null), {
+    message: /Could not find "Nowhere"/,
+  });
+});
+
+test('filterGeocodingResults: throws with suggestions when state not found', () => {
+  assert.throws(
+    () => filterGeocodingResults(mockResults, 'Portland', 'Texas'),
+    {
+      message:
+        /Could not find "Portland" in Texas\. Did you mean: Portland, Oregon; Portland, Maine; Portland, Indiana/,
+    },
+  );
+});
+
+test('filterGeocodingResults: suggestions exclude results without admin1', () => {
+  const results = [
+    { name: 'Springfield', latitude: 0, longitude: 0 },
+    {
+      name: 'Springfield',
+      admin1: 'Illinois',
+      latitude: 39.78,
+      longitude: -89.65,
+    },
+  ];
+  assert.throws(
+    () => filterGeocodingResults(results, 'Springfield', 'Texas'),
+    (err) => {
+      assert.ok(err.message.includes('Springfield, Illinois'));
+      assert.ok(!err.message.includes('undefined'));
+      return true;
+    },
+  );
+});
+
+test('filterGeocodingResults: suggestions capped at 5', () => {
+  const results = Array.from({ length: 8 }, (_, i) => ({
+    name: 'Springfield',
+    admin1: `State${i}`,
+    latitude: i,
+    longitude: i,
+  }));
+  assert.throws(
+    () => filterGeocodingResults(results, 'Springfield', 'Nonexistent'),
+    (err) => {
+      const suggestions = err.message.split('Did you mean: ')[1];
+      assert.equal(suggestions.split('; ').length, 5);
+      return true;
+    },
+  );
 });
