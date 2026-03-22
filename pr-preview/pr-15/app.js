@@ -566,11 +566,11 @@ void (() => {
           };
           els.locateBtn.classList.remove('locating');
         },
-        () => {
-          // Permission denied or error — silently leave input unchanged
+        (error) => {
+          // Permission denied, timeout, or other error — silently leave input unchanged
           els.locateBtn.classList.remove('locating');
         },
-        { enableHighAccuracy: false },
+        { enableHighAccuracy: false, timeout: 10000 },
       );
     });
 
