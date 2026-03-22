@@ -439,7 +439,7 @@ async function fetchAqi(lat, lon, tz, date, startHourIndex, endHourIndex) {
       }
       return max;
     }
-  } catch (e) {
+  } catch {
     /* best-effort */
   }
   return null;
@@ -581,7 +581,7 @@ void (() => {
           savedAt: Date.now(),
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
+      } catch {
         /* storage full or unavailable */
       }
     }
@@ -602,7 +602,7 @@ void (() => {
           return true;
         }
         return false;
-      } catch (e) {
+      } catch {
         return false;
       }
     }
@@ -610,7 +610,7 @@ void (() => {
     function clearState() {
       try {
         localStorage.removeItem(STORAGE_KEY);
-      } catch (e) {}
+      } catch {}
     }
 
     // ── Weather UI ────────────────────────────────────────────────
@@ -753,7 +753,7 @@ void (() => {
       // Assess using worst-case: lowest temp, highest wind/AQI
       const weather = assessWeather(tempLow, wind, aqi);
 
-      const humidity = weatherData ? `${weatherData.humidityMax}%` : '\u2014';
+      const _humidity = weatherData ? `${weatherData.humidityMax}%` : '\u2014';
       const precipChance = weatherData ? `${weatherData.precipMax}%` : '\u2014';
       const locationName = weatherData ? weatherData.locationName : location;
 

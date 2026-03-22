@@ -563,12 +563,12 @@ body {
   transform: rotate(-90deg);
 }
 
-.section.collapsed .section-items {
-  display: none;
-}
-
 .section-items {
   border-top: 1px solid var(--border);
+}
+
+.section.collapsed .section-items {
+  display: none;
 }
 
 .item {
@@ -588,11 +588,6 @@ body {
 
 .item:active {
   background: var(--surface-hover);
-}
-
-.item.checked .item-text {
-  color: var(--text-muted);
-  text-decoration: line-through;
 }
 
 .checkbox {
@@ -625,6 +620,11 @@ body {
 .item-text {
   font-size: 15px;
   line-height: 1.4;
+}
+
+.item.checked .item-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
 }
 
 .item-detail {
