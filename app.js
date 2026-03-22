@@ -366,6 +366,34 @@ function parseLocationInput(input) {
   return { city, stateFilter: qualifier };
 }
 
+/**
+ * Given geocoding results, apply the optional state filter and return the best
+ * match. Throws descriptive errors when no results exist or when the state
+ * filter doesn't match any result.
+ */
+function filterGeocodingResults(results, city, stateFilter) {
+  if (!results || results.length === 0) {
+    throw new Error(`Could not find "${city}". Try a different city name.`);
+  }
+  if (!stateFilter) {
+    return results[0];
+  }
+  const match = results.find(
+    (r) => r.admin1 && r.admin1.toLowerCase() === stateFilter.toLowerCase(),
+  );
+  if (match) {
+    return match;
+  }
+  const names = results
+    .filter((r) => r.admin1)
+    .map((r) => `${r.name}, ${r.admin1}`)
+    .slice(0, 5)
+    .join('; ');
+  throw new Error(
+    `Could not find "${city}" in ${stateFilter}. Did you mean: ${names || 'N/A'}?`,
+  );
+}
+
 // ── Weather API ─────────────────────────────────────────────────
 
 async function geocodeLocation(name) {
@@ -373,27 +401,7 @@ async function geocodeLocation(name) {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=10&language=en&format=json`;
   const res = await fetch(url);
   const data = await res.json();
-  if (!data.results || data.results.length === 0) {
-    throw new Error(`Could not find "${name}". Try a different city name.`);
-  }
-  let match;
-  if (stateFilter) {
-    match = data.results.find(
-      (r) => r.admin1 && r.admin1.toLowerCase() === stateFilter.toLowerCase(),
-    );
-    if (!match) {
-      const names = data.results
-        .filter((r) => r.admin1)
-        .map((r) => `${r.name}, ${r.admin1}`)
-        .slice(0, 5)
-        .join('; ');
-      throw new Error(
-        `Could not find "${city}" in ${stateFilter}. Did you mean: ${names || 'N/A'}?`,
-      );
-    }
-  } else {
-    match = data.results[0];
-  }
+  const match = filterGeocodingResults(data.results, city, stateFilter);
   const { latitude, longitude, timezone, name: cityName, admin1 } = match;
   return { latitude, longitude, timezone, cityName, admin1 };
 }
@@ -1150,6 +1158,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getClothingItems,
     getAccessoryItems,
     parseLocationInput,
+    filterGeocodingResults,
     US_STATE_ABBREVS,
     COLD_THRESHOLD,
     COOL_THRESHOLD,
