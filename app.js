@@ -283,22 +283,115 @@ function getAccessoryItems() {
   ];
 }
 
+// ── Location parsing ────────────────────────────────────────────
+
+const US_STATE_ABBREVS = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  FL: 'Florida',
+  GA: 'Georgia',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PA: 'Pennsylvania',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+  DC: 'District of Columbia',
+};
+
+/**
+ * Parse user input like "Pittsburgh, PA" or "Pittsburgh, Pennsylvania"
+ * into { city, stateFilter } where stateFilter is the full state name or null.
+ */
+function parseLocationInput(input) {
+  const parts = input.split(',').map((p) => p.trim());
+  if (parts.length < 2 || !parts[1]) {
+    return { city: parts[0], stateFilter: null };
+  }
+  const city = parts[0];
+  const qualifier = parts.slice(1).join(',').trim();
+  const upper = qualifier.toUpperCase();
+  if (US_STATE_ABBREVS[upper]) {
+    return { city, stateFilter: US_STATE_ABBREVS[upper] };
+  }
+  const fullMatch = Object.values(US_STATE_ABBREVS).find(
+    (name) => name.toLowerCase() === qualifier.toLowerCase(),
+  );
+  if (fullMatch) {
+    return { city, stateFilter: fullMatch };
+  }
+  return { city, stateFilter: qualifier };
+}
+
 // ── Weather API ─────────────────────────────────────────────────
 
 async function geocodeLocation(name) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`;
+  const { city, stateFilter } = parseLocationInput(name);
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=10&language=en&format=json`;
   const res = await fetch(url);
   const data = await res.json();
   if (!data.results || data.results.length === 0) {
-    throw new Error(`Could not find "${name}". Try a more specific city name.`);
+    throw new Error(`Could not find "${name}". Try a different city name.`);
   }
-  const {
-    latitude,
-    longitude,
-    timezone,
-    name: cityName,
-    admin1,
-  } = data.results[0];
+  let match;
+  if (stateFilter) {
+    match = data.results.find(
+      (r) => r.admin1 && r.admin1.toLowerCase() === stateFilter.toLowerCase(),
+    );
+    if (!match) {
+      const names = data.results
+        .filter((r) => r.admin1)
+        .map((r) => `${r.name}, ${r.admin1}`)
+        .slice(0, 5)
+        .join('; ');
+      throw new Error(
+        `Could not find "${city}" in ${stateFilter}. Did you mean: ${names || 'N/A'}?`,
+      );
+    }
+  } else {
+    match = data.results[0];
+  }
+  const { latitude, longitude, timezone, name: cityName, admin1 } = match;
   return { latitude, longitude, timezone, cityName, admin1 };
 }
 
@@ -1054,6 +1147,8 @@ if (typeof module !== 'undefined' && module.exports) {
     extractWeatherRange,
     getClothingItems,
     getAccessoryItems,
+    parseLocationInput,
+    US_STATE_ABBREVS,
     COLD_THRESHOLD,
     COOL_THRESHOLD,
     AVG_SPEED_MPH,

@@ -10,6 +10,7 @@ const {
   extractWeatherRange,
   getClothingItems,
   getAccessoryItems,
+  parseLocationInput,
 } = require('../app.js');
 
 function findItem(items, id) {
@@ -504,4 +505,60 @@ test('extractWeatherRange: empty arrays return NaN', () => {
   const range = extractWeatherRange([], [], [], [], 0, 0);
   assert.equal(Number.isNaN(range.tempLow), true);
   assert.equal(Number.isNaN(range.tempHigh), true);
+});
+
+// ── parseLocationInput ─────────────────────────────────────────
+
+test('parseLocationInput: plain city returns city with no filter', () => {
+  const result = parseLocationInput('Pittsburgh');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, null);
+});
+
+test('parseLocationInput: city with state abbreviation', () => {
+  const result = parseLocationInput('Pittsburgh, PA');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: city with lowercase state abbreviation', () => {
+  const result = parseLocationInput('Pittsburgh, pa');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: city with full state name', () => {
+  const result = parseLocationInput('Pittsburgh, Pennsylvania');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: city with mixed-case state name', () => {
+  const result = parseLocationInput('Austin, texas');
+  assert.equal(result.city, 'Austin');
+  assert.equal(result.stateFilter, 'Texas');
+});
+
+test('parseLocationInput: DC abbreviation', () => {
+  const result = parseLocationInput('Washington, DC');
+  assert.equal(result.city, 'Washington');
+  assert.equal(result.stateFilter, 'District of Columbia');
+});
+
+test('parseLocationInput: non-US qualifier passes through', () => {
+  const result = parseLocationInput('London, England');
+  assert.equal(result.city, 'London');
+  assert.equal(result.stateFilter, 'England');
+});
+
+test('parseLocationInput: trims whitespace', () => {
+  const result = parseLocationInput('  Pittsburgh ,  PA  ');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, 'Pennsylvania');
+});
+
+test('parseLocationInput: empty qualifier treated as plain city', () => {
+  const result = parseLocationInput('Pittsburgh,');
+  assert.equal(result.city, 'Pittsburgh');
+  assert.equal(result.stateFilter, null);
 });
