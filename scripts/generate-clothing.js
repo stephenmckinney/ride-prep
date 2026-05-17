@@ -127,7 +127,6 @@ function emitRange(r, indent) {
 }
 
 function emit(c) {
-  const date = new Date().toISOString();
   const rangeLines = c.ranges.map((r) => emitRange(r, 4)).join('\n');
   const accessoryLines = c.accessories
     .map((item) => emitItem(item, 4))
@@ -135,8 +134,6 @@ function emit(c) {
 
   return `// AUTO-GENERATED — do not edit by hand.
 // Edit clothing.yaml and run: npm run generate
-//
-// Generated: ${date}
 
 const CLOTHING_CONFIG = {
   ranges: [

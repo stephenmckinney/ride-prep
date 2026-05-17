@@ -1,7 +1,5 @@
 // AUTO-GENERATED — do not edit by hand.
 // Edit clothing.yaml and run: npm run generate
-//
-// Generated: 2026-05-17T19:14:46.168Z
 
 const CLOTHING_CONFIG = {
   ranges: [
