@@ -141,7 +141,7 @@ test('isRidingAfterDark: early morning ride finishing before sunset', () => {
 // ── getClothingItems ────────────────────────────────────────────
 
 test('getClothingItems: above 70F: plain jersey, bib shorts, short gloves', () => {
-  const items = getClothingItems(75);
+  const { items } = getClothingItems(75);
   assert.equal(findItem(items, 'jersey').text, 'Jersey');
   assert.equal(findItem(items, 'bibs').text, 'Bib shorts');
   assert.equal(findItem(items, 'gloves').text, 'Short-fingered gloves');
@@ -153,32 +153,32 @@ test('getClothingItems: above 70F: plain jersey, bib shorts, short gloves', () =
 });
 
 test('getClothingItems: 65-70F: brevet jersey + pro team base layer', () => {
-  const items = getClothingItems(67);
+  const { items } = getClothingItems(67);
   assert.equal(findItem(items, 'jersey').text, 'Brevet jersey');
   assert.equal(findItem(items, 'baselayer').text, 'Pro Team base layer');
 });
 
 test('getClothingItems: 60-64F: brevet jersey + merino base layer', () => {
-  const items = getClothingItems(62);
+  const { items } = getClothingItems(62);
   assert.equal(findItem(items, 'jersey').text, 'Brevet jersey');
   assert.equal(findItem(items, 'baselayer').text, 'Merino wool base layer');
 });
 
 test('getClothingItems: 55-59F: long-sleeve jersey + merino base layer', () => {
-  const items = getClothingItems(57);
+  const { items } = getClothingItems(57);
   assert.equal(findItem(items, 'jersey').text, 'Long-sleeve jersey');
   assert.equal(findItem(items, 'baselayer').text, 'Merino wool base layer');
 });
 
 test('getClothingItems: 50-54F: adds wind jacket', () => {
-  const items = getClothingItems(52);
+  const { items } = getClothingItems(52);
   assert.equal(findItem(items, 'jersey').text, 'Long-sleeve jersey');
   assert.ok(findItem(items, 'windjacket'), 'should include wind jacket');
   assert.equal(findItem(items, 'bibs').text, 'Bib shorts + leg warmers');
 });
 
 test('getClothingItems: 40-49F: softshell + winter tights + winter gloves', () => {
-  const items = getClothingItems(45);
+  const { items } = getClothingItems(45);
   assert.ok(findItem(items, 'softshell'), 'should include softshell');
   assert.ok(findItem(items, 'woolhat'), 'should include wool hat');
   assert.equal(findItem(items, 'bibs').text, 'Classic winter tights');
@@ -186,14 +186,14 @@ test('getClothingItems: 40-49F: softshell + winter tights + winter gloves', () =
 });
 
 test('getClothingItems: 30-39F: softshell + wool hat + scarf', () => {
-  const items = getClothingItems(35);
+  const { items } = getClothingItems(35);
   assert.ok(findItem(items, 'softshell'), 'should include softshell');
   assert.ok(findItem(items, 'woolhat'), 'should include wool hat');
   assert.ok(findItem(items, 'scarf'), 'should include scarf');
 });
 
 test('getClothingItems: below 50F: shoes include overshoes', () => {
-  const items = getClothingItems(45);
+  const { items } = getClothingItems(45);
   assert.ok(
     findItem(items, 'shoes').text.includes('overshoes'),
     'should mention overshoes',
@@ -201,7 +201,7 @@ test('getClothingItems: below 50F: shoes include overshoes', () => {
 });
 
 test('getClothingItems: 50-59F: shoes include oversocks', () => {
-  const items = getClothingItems(55);
+  const { items } = getClothingItems(55);
   assert.ok(
     findItem(items, 'shoes').text.includes('oversocks'),
     'should mention oversocks',
@@ -210,25 +210,25 @@ test('getClothingItems: 50-59F: shoes include oversocks', () => {
 
 test('getClothingItems: 60F+: long-fingered gloves at 59, short-fingered at 60', () => {
   assert.equal(
-    findItem(getClothingItems(59), 'gloves').text,
+    findItem(getClothingItems(59).items, 'gloves').text,
     'Long-fingered gloves',
   );
   assert.equal(
-    findItem(getClothingItems(60), 'gloves').text,
+    findItem(getClothingItems(60).items, 'gloves').text,
     'Short-fingered gloves',
   );
 });
 
 test('getClothingItems: exactly 50F gets leg warmers not winter tights', () => {
   assert.equal(
-    findItem(getClothingItems(50), 'bibs').text,
+    findItem(getClothingItems(50).items, 'bibs').text,
     'Bib shorts + leg warmers',
   );
 });
 
 test('getClothingItems: exactly 49F gets winter tights', () => {
   assert.equal(
-    findItem(getClothingItems(49), 'bibs').text,
+    findItem(getClothingItems(49).items, 'bibs').text,
     'Classic winter tights',
   );
 });
@@ -245,7 +245,7 @@ test('getAccessoryItems: includes helmet, sunglasses, handkerchief, whoop, bike 
 });
 
 test('getAccessoryItems: accessories not in clothing items', () => {
-  const clothing = getClothingItems(75);
+  const { items: clothing } = getClothingItems(75);
   assert.equal(
     findItem(clothing, 'helmet'),
     undefined,
@@ -364,8 +364,8 @@ test('assessMetric: AQI 151 is nope', () => {
 
 // ── getClothingItems edge cases ──────────────────────────────────
 
-test('getClothingItems: exactly 71F matches first CLOTHING_RULES boundary', () => {
-  const items = getClothingItems(71);
+test('getClothingItems: exactly 71F matches first range boundary', () => {
+  const { items } = getClothingItems(71);
   assert.equal(findItem(items, 'jersey').text, 'Jersey');
   assert.equal(findItem(items, 'bibs').text, 'Bib shorts');
   assert.equal(findItem(items, 'gloves').text, 'Short-fingered gloves');
@@ -382,24 +382,10 @@ test('assessMetric: AQI 0 is good (not ignored)', () => {
   assert.equal(assessMetric('aqi', 0), 'good');
 });
 
-test('getClothingItems: below 30F returns base items with no CLOTHING_RULES match', () => {
-  const items = getClothingItems(25);
-  assert.equal(findItem(items, 'bibs').text, 'Classic winter tights');
-  assert.equal(findItem(items, 'gloves').text, 'Winter gloves');
-  assert.ok(
-    findItem(items, 'shoes').text.includes('overshoes'),
-    'should include overshoes',
-  );
-  assert.equal(
-    findItem(items, 'jersey'),
-    undefined,
-    'no jersey rule matches below 30',
-  );
-  assert.equal(
-    findItem(items, 'baselayer'),
-    undefined,
-    'no base layer rule matches below 30',
-  );
+test('getClothingItems: below 30F returns empty items and null label (no range defined)', () => {
+  const { items, label } = getClothingItems(25);
+  assert.deepEqual(items, []);
+  assert.equal(label, null);
 });
 
 // ── getRideEndHour ──────────────────────────────────────────────
