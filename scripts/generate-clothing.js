@@ -135,7 +135,7 @@ function emit(c) {
   return `// AUTO-GENERATED — do not edit by hand.
 // Edit clothing.yaml and run: npm run generate
 
-const CLOTHING_CONFIG = {
+globalThis.CLOTHING_CONFIG = {
   ranges: [
 ${rangeLines}
   ],
@@ -145,7 +145,7 @@ ${accessoryLines}
 };
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CLOTHING_CONFIG };
+  module.exports = { CLOTHING_CONFIG: globalThis.CLOTHING_CONFIG };
 }
 `;
 }
