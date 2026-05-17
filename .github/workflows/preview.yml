@@ -16,11 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        if: github.event.action != 'closed'
+        with:
+          node-version: 20
+
       - name: Build preview
         if: github.event.action != 'closed'
         run: |
+          npm ci
+          npm run generate
           mkdir -p _preview
-          cp index.html app.js styles.css sw.js manifest.json icon-192.png icon-512.png _preview/
+          cp index.html app.js styles.css sw.js manifest.json icon-192.png icon-512.png clothing-config.js _preview/
           sed -i "s/__CACHE_VERSION__/${GITHUB_SHA::7}/" _preview/sw.js
 
       - uses: rossjrw/pr-preview-action@v1
