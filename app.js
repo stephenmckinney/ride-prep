@@ -401,13 +401,12 @@ void (() => {
       rideLocation: $('rideLocation'),
       locateBtn: $('locateBtn'),
       rideBike: $('rideBike'),
+      weatherInputs: $('weatherInputs'),
       rideTempLow: $('rideTempLow'),
       rideTempHigh: $('rideTempHigh'),
       rideWind: $('rideWind'),
       rideAqi: $('rideAqi'),
       rideSunset: $('rideSunset'),
-      rideMeetup: $('rideMeetup'),
-      rideLock: $('rideLock'),
       wpTemp: $('wpTemp'),
       wpWind: $('wpWind'),
       wpAqi: $('wpAqi'),
@@ -506,7 +505,7 @@ void (() => {
 
     // ── Persistence ───────────────────────────────────────────────
 
-    const STORAGE_KEY = 'ridePrep_v3';
+    const STORAGE_KEY = 'ridePrep_v4';
     const FORM_FIELDS = [
       'rideDate',
       'rideTime',
@@ -518,8 +517,6 @@ void (() => {
       'rideWind',
       'rideAqi',
       'rideSunset',
-      'rideMeetup',
-      'rideLock',
     ];
 
     function getFormValues() {
@@ -571,6 +568,14 @@ void (() => {
         if (!state || typeof state !== 'object') return false;
 
         setFormValues(state.form);
+
+        if (
+          state.form?.rideTempLow ||
+          state.form?.rideWind ||
+          state.form?.rideAqi
+        ) {
+          els.weatherInputs.classList.remove('hidden');
+        }
 
         if (state.screen === 'checklist') {
           weatherData = state.weatherData || null;
@@ -666,6 +671,7 @@ void (() => {
 
         weatherData = { ...forecast, aqi, locationName: label };
         displayWeatherPreview(weatherData);
+        els.weatherInputs.classList.remove('hidden');
 
         showStatus(
           'success',
@@ -678,9 +684,10 @@ void (() => {
             'Failed to fetch weather. You can enter values manually.',
         );
         els.weatherPreview.classList.remove('visible');
+        els.weatherInputs.classList.remove('hidden');
       } finally {
         els.fetchWeatherBtn.disabled = false;
-        els.fetchWeatherBtn.textContent = 'Fetch Weather for Ride Day';
+        els.fetchWeatherBtn.textContent = 'Fetch Weather';
       }
     }
 
@@ -706,8 +713,6 @@ void (() => {
       const wind = Number.parseFloat(els.rideWind.value);
       const aqi = Number.parseFloat(els.rideAqi.value);
       const bikeKey = els.rideBike.value;
-      const meetup = els.rideMeetup.value.trim();
-      const needLock = els.rideLock.value === 'yes';
       const rideDate = els.rideDate.value;
       const rideTime = els.rideTime.value;
       const location = els.rideLocation.value;
@@ -812,12 +817,6 @@ void (() => {
           : []),
         { id: 'route', text: 'Load route on Wahoo' },
       ];
-      if (needLock)
-        bikeItems.push({
-          id: 'lock',
-          text: 'Pack bike lock',
-          detail: 'Urban ride with stops',
-        });
       if (ridingDark)
         bikeItems.push({
           id: 'extralights',
@@ -899,22 +898,6 @@ void (() => {
         emoji: '\uD83E\uDD7D',
         items: accessoryItems,
       });
-
-      if (meetup) {
-        sections.push({
-          typeId: 'meetup',
-          title: 'Meetup',
-          emoji: '\uD83D\uDC65',
-          items: [
-            { id: 'meetup', text: meetup, detail: 'Confirm with your group' },
-            {
-              id: 'traveltime',
-              text: 'Account for travel time to start',
-              detail: 'Work backwards from meeting time',
-            },
-          ],
-        });
-      }
 
       sections.push({
         typeId: 'post-ride',
@@ -1162,6 +1145,7 @@ void (() => {
       els.editModeBanner.classList.remove('hidden');
       els.checklistScreen.classList.add('hidden');
       els.setupScreen.classList.remove('hidden');
+      if (weatherData) els.weatherInputs.classList.remove('hidden');
     }
 
     function resetAll() {
@@ -1183,11 +1167,10 @@ void (() => {
         els.rideTempHigh.value = '';
         els.rideWind.value = '';
         els.rideAqi.value = '';
-        els.rideMeetup.value = '';
-        els.rideLock.value = 'no';
         els.rideSunset.value = RIDE_DEFAULTS.sunset;
         els.weatherStatus.className = 'weather-status';
         els.weatherPreview.classList.remove('visible');
+        els.weatherInputs.classList.add('hidden');
         els.checklistContainer.innerHTML = '';
         els.weatherStrip.innerHTML = '';
         const tomorrow = new Date();
