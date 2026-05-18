@@ -1,6 +1,9 @@
 if (typeof globalThis.CLOTHING_CONFIG === 'undefined') {
   globalThis.CLOTHING_CONFIG = require('./clothing-config.js').CLOTHING_CONFIG;
 }
+if (typeof globalThis.RIDE_CONFIG === 'undefined') {
+  globalThis.RIDE_CONFIG = require('./ride-config.js').RIDE_CONFIG;
+}
 
 // ── Pure utility functions (testable without DOM) ───────────────
 
@@ -19,23 +22,23 @@ function formatTime(t) {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-const METRIC_THRESHOLDS = {
-  temp: [
-    { check: (v) => v < 40 || v > 95, level: 'nope' },
-    { check: (v) => v < 50 || v > 90, level: 'rough' },
-    { check: (v) => v < 60 || v > 85, level: 'fair' },
-  ],
-  wind: [
-    { check: (v) => v > 25, level: 'nope' },
-    { check: (v) => v > 15, level: 'rough' },
-    { check: (v) => v > 10, level: 'fair' },
-  ],
-  aqi: [
-    { check: (v) => v > 150, level: 'nope' },
-    { check: (v) => v > 100, level: 'rough' },
-    { check: (v) => v > 50, level: 'fair' },
-  ],
-};
+function buildMetricThresholds(weatherConfig) {
+  const result = {};
+  for (const [metric, levels] of Object.entries(weatherConfig)) {
+    result[metric] = ['nope', 'rough', 'fair'].map((level) => {
+      const { below, above } = levels[level];
+      return {
+        level,
+        check: (v) =>
+          (below !== undefined && v < below) ||
+          (above !== undefined && v > above),
+      };
+    });
+  }
+  return result;
+}
+
+const METRIC_THRESHOLDS = buildMetricThresholds(RIDE_CONFIG.weather);
 
 function assessMetric(type, value) {
   if (value === null || value === undefined || Number.isNaN(value))
@@ -125,40 +128,12 @@ function extractWeatherRange(
 
 // ── Constants ───────────────────────────────────────────────────
 
-const AVG_SPEED_MPH = 15; // Used to estimate ride duration
-
-const BIKES = {
-  caledonia: {
-    name: 'Cerv\u00E9lo Caledonia-5',
-    tire: '700C x 25',
-    frontPsi: '55\u201360',
-    rearPsi: '60\u201365',
-  },
-  r3: {
-    name: 'Cerv\u00E9lo R3',
-    tire: '700C x 23',
-    frontPsi: '70',
-    rearPsi: '70',
-  },
-  cx: {
-    name: 'Open UP 700C (CX)',
-    tire: '700C x 34',
-    frontPsi: '25',
-    rearPsi: '25',
-  },
-  gravel: {
-    name: 'Open UP 650B (Gravel)',
-    tire: '650B',
-    frontPsi: '24',
-    rearPsi: '25',
-  },
-  mtb: {
-    name: 'Ripley MTB',
-    tire: '29" x 2.4"',
-    frontPsi: '22\u201324',
-    rearPsi: '24\u201326',
-  },
-};
+const {
+  defaults: RIDE_DEFAULTS,
+  bikes: BIKES,
+  supplies: RIDE_SUPPLIES,
+} = RIDE_CONFIG;
+const AVG_SPEED_MPH = RIDE_DEFAULTS.avgSpeedMph;
 
 function getClothingItems(temp) {
   const range = CLOTHING_CONFIG.ranges.find(
@@ -475,7 +450,7 @@ void (() => {
           };
           els.locateBtn.classList.remove('locating');
         },
-        (error) => {
+        (_error) => {
           // Permission denied, timeout, or other error — silently leave input unchanged
           els.locateBtn.classList.remove('locating');
         },
@@ -511,6 +486,10 @@ void (() => {
         }
       }
     });
+
+    // ── Set form defaults from config ────────────────────────────
+    els.rideMiles.value = String(RIDE_DEFAULTS.distanceMiles);
+    els.rideSunset.value = RIDE_DEFAULTS.sunset;
 
     // ── Set default date to tomorrow ──────────────────────────────
     const tomorrow = new Date();
@@ -755,7 +734,9 @@ void (() => {
         rideDurationHrs,
         sunsetStr,
       );
-      const extraBags = Math.max(0, hours - 2);
+      const { bottlesOnBike, mixBagsPerExtraHour } = RIDE_SUPPLIES;
+      const extraBags =
+        Math.max(0, hours - bottlesOnBike) * mixBagsPerExtraHour;
 
       // Assess using worst-case: lowest temp, highest wind/AQI
       const weather = assessWeather(tempLow, wind, aqi);
@@ -811,6 +792,24 @@ void (() => {
           text: `Pump tires \u2014 Front: ${bike.frontPsi} PSI / Rear: ${bike.rearPsi} PSI`,
           detail: bike.tire,
         },
+        ...(bike.fork
+          ? [
+              {
+                id: 'fork',
+                text: `Set fork pressure \u2014 ${bike.fork.psi} PSI`,
+                detail: `${bike.fork.model} / ${bike.fork.travel} travel`,
+              },
+            ]
+          : []),
+        ...(bike.shock
+          ? [
+              {
+                id: 'shock',
+                text: `Set shock pressure \u2014 ${bike.shock.psi} PSI`,
+                detail: `${bike.shock.model} / ${bike.shock.stroke} stroke`,
+              },
+            ]
+          : []),
         { id: 'route', text: 'Load route on Wahoo' },
       ];
       if (needLock)
@@ -844,13 +843,16 @@ void (() => {
           text: `Pack ${waffles} Honey Stinger Waffle${waffles > 1 ? 's' : ''}`,
           detail: `${waffles} waffle${waffles > 1 ? 's' : ''} for ~${hours} hr ride`,
         },
-        { id: 'bottles', text: 'Fill 2 bottles with Skratch mix' },
+        {
+          id: 'bottles',
+          text: `Fill ${bottlesOnBike} bottle${bottlesOnBike > 1 ? 's' : ''} with Skratch mix`,
+        },
       ];
       if (extraBags > 0) {
         foodItems.push({
           id: 'bags',
           text: `Pack ${extraBags} Ziploc bag${extraBags > 1 ? 's' : ''} of Skratch mix`,
-          detail: `${2 + extraBags} total bottles for ~${hours} hr ride`,
+          detail: `${bottlesOnBike + extraBags} total bottles for ~${hours} hr ride`,
         });
       }
       foodItems.push({
@@ -1176,14 +1178,14 @@ void (() => {
         els.weatherBlock.classList.add('hidden');
         els.headerTitle.textContent = 'Ride Prep';
         els.headerDatetime.textContent = "Get ready for tomorrow's ride";
-        els.rideMiles.value = '30';
+        els.rideMiles.value = String(RIDE_DEFAULTS.distanceMiles);
         els.rideTempLow.value = '';
         els.rideTempHigh.value = '';
         els.rideWind.value = '';
         els.rideAqi.value = '';
         els.rideMeetup.value = '';
         els.rideLock.value = 'no';
-        els.rideSunset.value = '18:30';
+        els.rideSunset.value = RIDE_DEFAULTS.sunset;
         els.weatherStatus.className = 'weather-status';
         els.weatherPreview.classList.remove('visible');
         els.checklistContainer.innerHTML = '';
@@ -1217,6 +1219,6 @@ if (typeof module !== 'undefined' && module.exports) {
     filterGeocodingResults,
     buildEditPreservedChecks,
     US_STATE_ABBREVS,
-    AVG_SPEED_MPH,
+    RIDE_CONFIG,
   };
 }
