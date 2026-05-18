@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "generate": "node scripts/generate-clothing.js",
     "test": "node --test tests/tests.node.js",
     "lint": "npx @biomejs/biome check .",
     "lint:fix": "npx @biomejs/biome check --write .",
     "format": "npx @biomejs/biome format --write ."
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8"
+    "@biomejs/biome": "^2.4.8",
+    "js-yaml": "^4.1.1"
   }
 }
