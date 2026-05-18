@@ -26,7 +26,7 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm test
-      - name: Verify clothing-config.js is up to date
+      - name: Verify generated configs are up to date
         run: |
           npm run generate
-          git diff --exit-code clothing-config.js
+          git diff --exit-code clothing-config.js ride-config.js

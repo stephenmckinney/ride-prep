@@ -27,7 +27,7 @@ jobs:
           npm ci
           npm run generate
           mkdir -p _preview
-          cp index.html app.js styles.css sw.js manifest.json icon-192.png icon-512.png clothing-config.js _preview/
+          cp index.html app.js styles.css sw.js manifest.json icon-192.png icon-512.png clothing-config.js ride-config.js _preview/
           sed -i "s/__CACHE_VERSION__/${GITHUB_SHA::7}/" _preview/sw.js
 
       - uses: rossjrw/pr-preview-action@v1
