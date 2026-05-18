@@ -505,7 +505,7 @@ void (() => {
 
     // ── Persistence ───────────────────────────────────────────────
 
-    const STORAGE_KEY = 'ridePrep_v3';
+    const STORAGE_KEY = 'ridePrep_v4';
     const FORM_FIELDS = [
       'rideDate',
       'rideTime',
@@ -684,6 +684,7 @@ void (() => {
             'Failed to fetch weather. You can enter values manually.',
         );
         els.weatherPreview.classList.remove('visible');
+        els.weatherInputs.classList.remove('hidden');
       } finally {
         els.fetchWeatherBtn.disabled = false;
         els.fetchWeatherBtn.textContent = 'Fetch Weather';
