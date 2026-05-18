@@ -610,12 +610,25 @@ body {
   user-select: none;
 }
 
+.section-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .section-header h3 {
   font-size: 15px;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.section-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
 .section-badge {

@@ -1,3 +1,7 @@
+if (typeof globalThis.CLOTHING_CONFIG === 'undefined') {
+  globalThis.CLOTHING_CONFIG = require('./clothing-config.js').CLOTHING_CONFIG;
+}
+
 // ── Pure utility functions (testable without DOM) ───────────────
 
 function esc(s) {
@@ -121,8 +125,6 @@ function extractWeatherRange(
 
 // ── Constants ───────────────────────────────────────────────────
 
-const COLD_THRESHOLD = 50; // Below: winter tights, overshoes, winter gloves
-const COOL_THRESHOLD = 60; // Below: leg warmers, oversocks, long-fingered gloves
 const AVG_SPEED_MPH = 15; // Used to estimate ride duration
 
 const BIKES = {
@@ -158,129 +160,19 @@ const BIKES = {
   },
 };
 
-const CLOTHING_RULES = [
-  {
-    min: 71,
-    max: Number.POSITIVE_INFINITY,
-    prepend: [{ id: 'jersey', text: 'Jersey' }],
-  },
-  {
-    min: 65,
-    max: 70,
-    prepend: [
-      {
-        id: 'baselayer',
-        text: 'Pro Team base layer',
-        detail: 'Lightweight mesh',
-      },
-      { id: 'jersey', text: 'Brevet jersey' },
-    ],
-  },
-  {
-    min: 60,
-    max: 64,
-    prepend: [
-      { id: 'baselayer', text: 'Merino wool base layer' },
-      { id: 'jersey', text: 'Brevet jersey' },
-    ],
-  },
-  {
-    min: 55,
-    max: 59,
-    prepend: [
-      { id: 'baselayer', text: 'Merino wool base layer' },
-      { id: 'jersey', text: 'Long-sleeve jersey' },
-    ],
-  },
-  {
-    min: 50,
-    max: 54,
-    prepend: [
-      { id: 'baselayer', text: 'Merino wool base layer' },
-      { id: 'jersey', text: 'Long-sleeve jersey' },
-      { id: 'windjacket', text: 'Classic Wind jacket' },
-    ],
-  },
-  {
-    min: 40,
-    max: 49,
-    prepend: [
-      { id: 'baselayer', text: 'Merino wool base layer' },
-      { id: 'jersey', text: 'Long-sleeve jersey' },
-      { id: 'softshell', text: 'Classic Softshell jacket' },
-    ],
-    append: [
-      {
-        id: 'woolhat',
-        text: 'Wool hat',
-        detail: 'Optional \u2014 helps with ears',
-      },
-    ],
-  },
-  {
-    min: 30,
-    max: 39,
-    prepend: [
-      { id: 'baselayer', text: 'Merino wool base layer' },
-      { id: 'jersey', text: 'Long-sleeve jersey' },
-      { id: 'softshell', text: 'Classic Softshell jacket' },
-    ],
-    append: [
-      { id: 'woolhat', text: 'Wool hat', detail: 'Must have' },
-      { id: 'scarf', text: 'Cycling scarf' },
-    ],
-  },
-];
-
 function getClothingItems(temp) {
-  const items = [
-    {
-      id: 'bibs',
-      text:
-        temp < COLD_THRESHOLD
-          ? 'Classic winter tights'
-          : temp < COOL_THRESHOLD
-            ? 'Bib shorts + leg warmers'
-            : 'Bib shorts',
-    },
-    { id: 'socks', text: 'Pro Team Socks' },
-    {
-      id: 'shoes',
-      text: `Shoes${temp < COLD_THRESHOLD ? ' + overshoes' : temp < COOL_THRESHOLD ? ' + oversocks' : ''}`,
-    },
-    {
-      id: 'gloves',
-      text:
-        temp < COLD_THRESHOLD
-          ? 'Winter gloves'
-          : temp < COOL_THRESHOLD
-            ? 'Long-fingered gloves'
-            : 'Short-fingered gloves',
-    },
-  ];
-
-  const rule = CLOTHING_RULES.find((r) => temp >= r.min && temp <= r.max);
-  if (rule) {
-    if (rule.prepend) {
-      for (const item of [...rule.prepend].reverse())
-        items.unshift({ ...item });
-    }
-    if (rule.append) {
-      for (const item of rule.append) items.push({ ...item });
-    }
-  }
-
-  return items;
+  const range = CLOTHING_CONFIG.ranges.find(
+    (r) => temp >= r.min && temp <= r.max,
+  );
+  if (!range) return { items: [], label: null };
+  return {
+    items: range.items.map((item) => ({ ...item })),
+    label: range.label,
+  };
 }
 
 function getAccessoryItems() {
-  return [
-    { id: 'helmet', text: 'Helmet' },
-    { id: 'sunglasses', text: 'Sunglasses' },
-    { id: 'handkerchief', text: 'Handkerchief' },
-    { id: 'whoop', text: 'WHOOP arm band' },
-    { id: 'bikebag', text: 'Bike bag', detail: 'Credit card, ID, phone' },
-  ];
+  return CLOTHING_CONFIG.accessories.map((item) => ({ ...item }));
 }
 
 // ── Location parsing ────────────────────────────────────────────
@@ -988,10 +880,12 @@ void (() => {
         ],
       });
 
-      const clothingItems = getClothingItems(tempLow);
+      const { items: clothingItems, label: clothingLabel } =
+        getClothingItems(tempLow);
       sections.push({
         typeId: 'clothing',
         title: 'Clothing',
+        subtitle: clothingLabel,
         emoji: '\uD83D\uDC55',
         items: clothingItems,
       });
@@ -1077,7 +971,10 @@ void (() => {
         html += `
       <div class="section" id="${sectionId}">
         <div class="section-header">
-          <h3>${sec.emoji} ${esc(sec.title)} <span class="section-badge" id="${sectionId}_badge">0/${sec.items.length}</span></h3>
+          <div class="section-header__left">
+            <h3>${sec.emoji} ${esc(sec.title)} <span class="section-badge" id="${sectionId}_badge">0/${sec.items.length}</span></h3>
+            ${sec.subtitle ? `<p class="section-subtitle">${esc(sec.subtitle)}</p>` : ''}
+          </div>
           <span class="section-chevron">\u25BC</span>
         </div>
         <div class="section-items">${itemsHtml}</div>
@@ -1320,8 +1217,6 @@ if (typeof module !== 'undefined' && module.exports) {
     filterGeocodingResults,
     buildEditPreservedChecks,
     US_STATE_ABBREVS,
-    COLD_THRESHOLD,
-    COOL_THRESHOLD,
     AVG_SPEED_MPH,
   };
 }

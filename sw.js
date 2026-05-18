@@ -1,8 +1,9 @@
-const CACHE_NAME = 'ride-prep-a5a27bc';
+const CACHE_NAME = 'ride-prep-e8857d5';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
+  './clothing-config.js',
   './app.js',
   './manifest.json',
   './icon-192.png',
