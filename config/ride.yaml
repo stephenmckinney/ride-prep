@@ -10,33 +10,41 @@ defaults:
 bikes:
   caledonia:
     name: "Cervélo Caledonia-5"
-    tire: "700C x 25"
-    front_psi: "55–60"
-    rear_psi: "60–65"
+    tire: "Vittoria Corsa Control TLR 28c"
+    front_psi: "48–52"
+    rear_psi: "52–56"
 
   r3:
     name: "Cervélo R3"
-    tire: "700C x 23"
-    front_psi: "70"
-    rear_psi: "70"
+    tire: "700C x 23 (tubed)"
+    front_psi: "68"
+    rear_psi: "72"
 
   cx:
     name: "Open UP 700C (CX)"
-    tire: "700C x 34"
-    front_psi: "25"
-    rear_psi: "25"
+    tire: "Donnelly PDX (F) / MXP (R) 700x33"
+    front_psi: "22–23"
+    rear_psi: "24–25"
 
   gravel:
     name: "Open UP 650B (Gravel)"
-    tire: "650B"
-    front_psi: "24"
-    rear_psi: "25"
+    tire: "Rene Herse 650Bx48 Juniper Ridge"
+    front_psi: "16–18"
+    rear_psi: "18–20"
 
   mtb:
-    name: "Ripley MTB"
+    name: "Ibis Ripley MTB"
     tire: '29" x 2.4"'
     front_psi: "22–24"
     rear_psi: "24–26"
+    fork:
+      model: "RockShox Pike 29"
+      travel: "140mm"
+      psi: "52–57"
+    shock:
+      model: "RockShox Deluxe Select+"
+      stroke: "52.5mm"
+      psi: "140–150"
 
 # Ride-go/no-go bands. Each level requires both below and/or above thresholds.
 # Levels are checked in order: nope → rough → fair → (good if none match).

@@ -792,6 +792,24 @@ void (() => {
           text: `Pump tires \u2014 Front: ${bike.frontPsi} PSI / Rear: ${bike.rearPsi} PSI`,
           detail: bike.tire,
         },
+        ...(bike.fork
+          ? [
+              {
+                id: 'fork',
+                text: `Set fork pressure \u2014 ${bike.fork.psi} PSI`,
+                detail: `${bike.fork.model} / ${bike.fork.travel} travel`,
+              },
+            ]
+          : []),
+        ...(bike.shock
+          ? [
+              {
+                id: 'shock',
+                text: `Set shock pressure \u2014 ${bike.shock.psi} PSI`,
+                detail: `${bike.shock.model} / ${bike.shock.stroke} stroke`,
+              },
+            ]
+          : []),
         { id: 'route', text: 'Load route on Wahoo' },
       ];
       if (needLock)

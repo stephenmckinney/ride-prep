@@ -120,14 +120,34 @@ function q(s) {
 function emitBike(key, bike, indent) {
   const pad = ' '.repeat(indent);
   const pad2 = ' '.repeat(indent + 2);
-  return [
+  const pad3 = ' '.repeat(indent + 4);
+  const lines = [
     `${pad}${key}: {`,
     `${pad2}name: ${q(bike.name)},`,
     `${pad2}tire: ${q(bike.tire)},`,
     `${pad2}frontPsi: ${q(bike.front_psi)},`,
     `${pad2}rearPsi: ${q(bike.rear_psi)},`,
-    `${pad}},`,
-  ].join('\n');
+  ];
+  if (bike.fork) {
+    lines.push(
+      `${pad2}fork: {`,
+      `${pad3}model: ${q(bike.fork.model)},`,
+      `${pad3}travel: ${q(bike.fork.travel)},`,
+      `${pad3}psi: ${q(bike.fork.psi)},`,
+      `${pad2}},`,
+    );
+  }
+  if (bike.shock) {
+    lines.push(
+      `${pad2}shock: {`,
+      `${pad3}model: ${q(bike.shock.model)},`,
+      `${pad3}stroke: ${q(bike.shock.stroke)},`,
+      `${pad3}psi: ${q(bike.shock.psi)},`,
+      `${pad2}},`,
+    );
+  }
+  lines.push(`${pad}},`);
+  return lines.join('\n');
 }
 
 function emitThreshold(entry, indent) {
