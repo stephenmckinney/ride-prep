@@ -5,7 +5,7 @@ const path = require('node:path');
 const yaml = require('js-yaml');
 
 const ROOT = path.resolve(__dirname, '..');
-const INPUT = path.join(ROOT, 'clothing.yaml');
+const INPUT = path.join(ROOT, 'config', 'clothing.yaml');
 const OUTPUT = path.join(ROOT, 'clothing-config.js');
 
 const raw = fs.readFileSync(INPUT, 'utf8');
