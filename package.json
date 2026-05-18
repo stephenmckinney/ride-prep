@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "generate": "node scripts/generate-clothing.js",
+    "generate": "node scripts/generate-clothing.js && node scripts/generate-ride.js",
     "test": "node --test tests/tests.node.js",
     "lint": "npx @biomejs/biome check .",
     "lint:fix": "npx @biomejs/biome check --write .",
